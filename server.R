@@ -429,6 +429,13 @@ server <- function(input, output, session) {
             formatPercentage("RO", digits = 1)
     })
 
+    output$how_rounds_end_per_stage <- DT::renderDataTable({
+        datatable(how_rounds_end_per_stage(data), options = list(paging = FALSE, searching = FALSE)) %>%
+            formatPercentage("KO", digits = 1) %>%
+            formatPercentage("EX", digits = 1) %>%
+            formatPercentage("RO", digits = 1)
+    })
+
     localized_characters <- reactive({
         lang <- input$language # Get the selected language
         dict$characters[[lang]] # Return character names based on selected language
