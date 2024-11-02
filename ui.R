@@ -179,7 +179,7 @@ ui <- fluidPage(
         tabPanel(
             "About",
             tags$p(
-                "VirtuAnalytics v1.1.0"
+                "VirtuAnalytics v1.2.0"
             ),
             tags$hr(),
             tags$p(
