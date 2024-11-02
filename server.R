@@ -10,6 +10,7 @@ library(DT) # Load DT package for interactive tables
 source("ui.R")
 source("R/analytics.R")
 source("R/analytics_character.R")
+source("R/analytics_rounds.R")
 
 dict <- list(
     "Ranks" = c("English" = "Ranks", "日本語" = "段位"),
@@ -379,7 +380,7 @@ server <- function(input, output, session) {
 
     output$win_rate_per_rank <- DT::renderDataTable({
         datatable(win_rate_per_rank(), options = list(paging = TRUE, searching = FALSE)) %>%
-        formatPercentage("win_percentage", digits = 0)
+            formatPercentage("win_percentage", digits = 0)
     })
 
     create_character_tables(output, data, "Akira")
@@ -401,6 +402,32 @@ server <- function(input, output, session) {
     create_character_tables(output, data, "Taka")
     create_character_tables(output, data, "Vanessa")
     create_character_tables(output, data, "Wolf")
+
+    output$win_method_piechart <- renderPlot({
+        # Create pie chart
+        ggplot(rounds_won_piechart_data(data), aes(x = "", y = percentage, fill = How.Round.Ended)) +
+            geom_bar(stat = "identity", width = 1) +
+            coord_polar("y") +
+            labs(title = "Win Method Distribution", fill = "How.Round.Ended") +
+            theme_void() + # Clean up theme for pie chart appearance
+            geom_text(aes(label = paste0(round(percentage), "%")),
+                position = position_stack(vjust = 0.5)
+            )
+    })
+
+    output$win_methods_by_character <- DT::renderDataTable({
+        datatable(how_rounds_won_data(data), options = list(paging = FALSE, searching = FALSE)) %>%
+            formatPercentage("KO", digits = 1) %>%
+            formatPercentage("EX", digits = 1) %>%
+            formatPercentage("RO", digits = 1)
+    })
+
+    output$loss_methods_by_character <- DT::renderDataTable({
+        datatable(how_rounds_lost_data(data), options = list(paging = FALSE, searching = FALSE)) %>%
+            formatPercentage("KO", digits = 1) %>%
+            formatPercentage("EX", digits = 1) %>%
+            formatPercentage("RO", digits = 1)
+    })
 
     localized_characters <- reactive({
         lang <- input$language # Get the selected language

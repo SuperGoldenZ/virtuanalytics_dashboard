@@ -1,3 +1,6 @@
+library(dplyr)
+library(tidyr)
+
 stage_types <- data.frame(
     Stage = c(
         "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
