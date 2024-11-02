@@ -136,7 +136,9 @@ ui <- fluidPage(
                         column(4, DT::dataTableOutput("time_remaining_per_stage")),
                     ),
                     fluidRow(
-                        column(6, plotOutput("win_method_piechart")),
+                        column(6, plotOutput("win_method_piechart"),
+                        DT::dataTableOutput("how_rounds_end_per_stage")
+                        ),
                         column(
                             4,
                             DT::dataTableOutput("win_methods_by_character"),
@@ -179,7 +181,7 @@ ui <- fluidPage(
         tabPanel(
             "About",
             tags$p(
-                "VirtuAnalytics v1.2.0"
+                "VirtuAnalytics v1.2.1"
             ),
             tags$hr(),
             tags$p(
