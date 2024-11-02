@@ -128,20 +128,30 @@ ui <- fluidPage(
                 column(
                     8,
                     fluidRow(
-                        column(6,plotOutput("rankDistPlot")),
-                        column(4,DT::dataTableOutput("win_rate_per_rank"))                        
+                        column(6, plotOutput("rankDistPlot")),
+                        column(4, DT::dataTableOutput("win_rate_per_rank"))
                     ),
                     fluidRow(
                         column(6, plotOutput("stageDistPlot")),
-                        column(4,DT::dataTableOutput("time_remaining_per_stage")),
+                        column(4, DT::dataTableOutput("time_remaining_per_stage")),
                     ),
                     fluidRow(
-                        column(6,plotOutput("characterDistPlot")),                        
-                        column(4,
+                        column(6, plotOutput("win_method_piechart")),
+                        column(
+                            4,
+                            DT::dataTableOutput("win_methods_by_character"),
+                            DT::dataTableOutput("loss_methods_by_character")
+                        )
+                    ),
+                    fluidRow(
+                        column(6, plotOutput("characterDistPlot")),
+                        column(
+                            4,
                             DT::dataTableOutput("win_rate_table"),
-                            DT::dataTableOutput("character_matchup_table"))
-                        ),
-                    fullscreen_those(items = list("characterDistPlot", "rankDistPlot", "stageDistPlot")),                    
+                            DT::dataTableOutput("character_matchup_table")
+                        )
+                    ),
+                    fullscreen_those(items = list("characterDistPlot", "rankDistPlot", "stageDistPlot")),
                 )
             ),
         ),
