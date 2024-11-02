@@ -2,7 +2,7 @@ VF5 Ultimate Shordown / eSports data visualization and analytics.
 
 ## Dependencies
 * [R](https://cran.r-project.org/)
-* [VF5 US/ES Match Data](https://t.co/H6JnOKsIQj)
+* [VF5 US/ES Match Data](https://drive.google.com/file/d/1sFWtXkqOzrjMrjBv1POF1WkmartpUFkm/view?usp=drive_link)
 
 ## Data
 VirtuAnalytics dashboard visualizes Virtua Fighter 5 US/ES match data.
@@ -13,7 +13,7 @@ Browse [VF5 US/ES Match Data](https://t.co/H6JnOKsIQj) in web browser and save t
 
 Linux
 ```
-wget "https://drive.usercontent.google.com/u/0/uc?id=1ZFwbOWkIxUrxT6wT6FVq2fkP5uDlfDpZ&export=download" -O data/vf_match_data.csv
+wget "https://drive.usercontent.google.com/u/0/uc?id=1sFWtXkqOzrjMrjBv1POF1WkmartpUFkm&export=download" -O data/vf_match_data.csv
 
 ```
 
