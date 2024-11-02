@@ -1,3 +1,6 @@
+library(dplyr)
+library(tidyr)
+
 rounds_won_piechart_data <- function(data) {
     rounds_summary <- data %>%
         filter(round_number > 0) %>%

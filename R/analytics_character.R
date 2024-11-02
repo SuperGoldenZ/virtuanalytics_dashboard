@@ -1,3 +1,5 @@
+library(dplyr)
+
 character_matchup_win_table <- function(data, character_name) {
     # Filter out matches where both players are the same character
     matchup_data <- data %>%
