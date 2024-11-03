@@ -505,7 +505,7 @@ time_remaining_per_stage <- function() {
             Average_Time_Per_Round = mean(Time.Seconds, na.rm = TRUE),
             Median_Time_Per_Round = median(Time.Seconds, na.rm = TRUE),
             NFth = quantile(Time.Seconds, 0.95),
-            Fastest = min(Time.Seconds),            
+            Fastest = min(Time.Seconds),
             .groups = "drop"
         ) %>%
         arrange((Average_Time_Per_Round))
@@ -521,8 +521,8 @@ time_remaining_per_stage <- function() {
         t_test_result <- t.test(time_remaining_specific, time_remaining_other)
 
         summary_stats$p_value[summary_stats$Stage_Type == stage_type] <- t_test_result$p.value
-        #print(merged_data)
-        #summary_stats$Fastest <- merged_data[merged_data$Stage_Type == stage_type][which.min(Time.Seconds), `Youtube Link`]
+        # print(merged_data)
+        # summary_stats$Fastest <- merged_data[merged_data$Stage_Type == stage_type][which.min(Time.Seconds), `Youtube Link`]
     }
 
     summary_stats$Median_Time_Per_Round <- NULL

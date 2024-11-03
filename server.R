@@ -64,6 +64,20 @@ create_character_tables <- function(output, data, character_name) {
             )
     })
 
+    output[[paste0(l_character_name, "_wins_per_character_and_stage_table")]] <- DT::renderDataTable({
+        datatable(character_stage_matchup_win_table(data, character_name), options = list(
+            pageLength = 20,
+            paging = FALSE,
+            searching = FALSE
+        )) %>%
+            formatPercentage("Win %", digits = 0) # %>%
+        # formatRound("p_value", digits = 3) %>%
+        # formatStyle(
+        # "p_value",
+        # backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+        # )
+    })
+
     # Wins per Stage Table
     output[[paste0(l_character_name, "_wins_per_stage_table")]] <- DT::renderDataTable({
         datatable(win_percentages_per_character(data, character_name), options = list(
