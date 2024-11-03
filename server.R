@@ -88,6 +88,31 @@ create_character_tables <- function(output, data, character_name) {
         datatable(matches_list, escape = FALSE, options = list(lengthChange = FALSE, searching = TRUE))
     })
 
+    # output[[paste0(l_character_name, "_win_probability_per_round")]] <- DT::renderDataTable({
+    # win_probability_per_round(data, character_name)
+    # })
+
+    output[[paste0(l_character_name, "_win_probability_per_round")]] <- renderPlot({
+        df <- win_probability_per_round(data, character_name) %>%
+            filter(cumulative_wins < 3) %>%
+            filter((round_number - cumulative_wins) < 3)
+
+        ggplot(df, aes(x = round_number + 1, y = wp, color = as.factor(cumulative_wins))) +
+            xlim(0, 6) +
+            scale_x_continuous(breaks = c(1, 2, 3, 4, 5)) +
+            scale_y_continuous(limits = c(0, 1), expand = expansion(mult = c(0, 0.25))) + # Set y-axis limits and top margin
+            geom_point(size = 3) +
+            geom_text(aes(label = paste(cumulative_wins, "-", (round_number - cumulative_wins), "\n", round(wp * 100, 0), "%"), vjust = -0.5, size = 2)) +
+            guides(fill = "none") +
+            labs(title = "Match Win Probability by Round", x = "Round Number", y = "Match Win Probability") +
+            theme_minimal() +
+            theme(
+                legend.position = "none",
+                plot.title = element_text(size = 16, face = "bold"),
+                axis.title = element_text(size = 14)
+            )
+    })
+
     return(1)
 
     # Match Wins per Stage Lookup Table
