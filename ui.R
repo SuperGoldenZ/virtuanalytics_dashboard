@@ -30,7 +30,8 @@ generate_character_tab <- function(character) {
             column(
                 4,
                 DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_table")),
-                plotOutput(paste0(tolower(character), "_win_probability_per_round"))
+                plotOutput(paste0(tolower(character), "_win_probability_per_round")),
+                DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_and_stage_table")),
             )
         )
     )
