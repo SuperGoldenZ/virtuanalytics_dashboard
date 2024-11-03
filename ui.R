@@ -23,13 +23,14 @@ generate_character_tab <- function(character) {
             ),
             column(
                 4,
-                DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_table")),
+                DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_table"))
                 # DT::dataTableOutput(paste0(tolower(character), "_match_wins_per_stage_lookup_table")),
                 # DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_lookup_table"))
             ),
             column(
                 4,
-                DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_table"))
+                DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_table")),
+                plotOutput(paste0(tolower(character), "_win_probability_per_round"))
             )
         )
     )
@@ -136,8 +137,9 @@ ui <- fluidPage(
                         column(4, DT::dataTableOutput("time_remaining_per_stage")),
                     ),
                     fluidRow(
-                        column(6, plotOutput("win_method_piechart"),
-                        DT::dataTableOutput("how_rounds_end_per_stage")
+                        column(
+                            6, plotOutput("win_method_piechart"),
+                            DT::dataTableOutput("how_rounds_end_per_stage")
                         ),
                         column(
                             4,
@@ -181,7 +183,7 @@ ui <- fluidPage(
         tabPanel(
             "About",
             tags$p(
-                "VirtuAnalytics v1.2.1"
+                "VirtuAnalytics v1.2.2"
             ),
             tags$hr(),
             tags$p(
