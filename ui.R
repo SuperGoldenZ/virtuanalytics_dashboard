@@ -67,6 +67,14 @@ ui <- fluidPage(
         font-size: 12px;  /* Change this value to adjust the font size */
       }
 
+    .navbar {
+          position: sticky;
+          top: 0;
+          z-index: 1000;
+          background-color: #f8f9fa;
+          box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow for better visibility */
+      }
+
       /*body {
         background-color: #9c7c70;
       }*/
