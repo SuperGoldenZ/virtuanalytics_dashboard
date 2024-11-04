@@ -239,7 +239,10 @@ server <- function(input, output, session) {
     youtube_video_data <- reactive({
         checked_count <- length(input$characters)
 
-        if (checked_count == 1) {
+        # return all data at first which is already available for faster loading
+        if (checked_count == 0 & length(input$ranks) == 7) {
+            youtube_video_data_all
+        } else if (checked_count == 1) {
             match_data %>%
                 filter(Player.1.Rank %in% input$ranks | Player.2.Rank %in% input$ranks) %>%
                 filter(Player.1.Character %in% input$characters & Player.2.Character %in% input$characters) %>%
@@ -263,7 +266,6 @@ server <- function(input, output, session) {
                 mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
                 select(Stage, Desc, Link)
         }
-
         # colnames(match_data)[colnames(match_data) == "Link"] <- dict[["Link"]][[input$language]]
     })
 
@@ -341,16 +343,38 @@ server <- function(input, output, session) {
     })
 
     # Character distribution plot
+    output$stageDistPlot <- renderPlot({
+        stage_counts <- filtered_data() %>%
+            select(stage) %>%
+            pivot_longer(cols = everything(), values_to = "Stage") %>%
+            count(Stage)
+        stage_counts <- stage_counts %>%
+            mutate(Stage = fct_reorder(Stage, n, .desc = TRUE))
+        ggplot(stage_counts, aes(x = Stage, y = n, fill = Stage)) +
+            geom_bar(stat = "identity") +
+            labs(title = paste(dict[["Stage Distribution"]][[input$language]], "(", comma(total_samples() / 4), dict[["matches"]][[input$language]], ")"), x = "Stage", y = "Count") +
+            theme_minimal() +
+            theme(
+                axis.text.x = element_text(angle = 45, hjust = 1, size = 14), plot.margin = margin(b = 15),
+                plot.title = element_text(size = 20, face = "bold"), # Title font size
+                axis.title.y = element_text(size = 16), # Y-axis label font size
+                axis.text.y = element_text(size = 14),
+                legend.title = element_text(size = 0), # Legend title font size
+                legend.text = element_text(size = 10),
+                legend.position = "none"
+            )
+    })
+
+
+    # Character distribution plot
     output$characterDistPlot <- renderPlot({
         character_counts <- filtered_data() %>%
             select(character) %>%
-            mutate(character = sapply(character, function(char) dict[[char]][[input$language]])) %>%
+            # mutate(character = sapply(character, function(char) dict[[char]][[input$language]])) %>%
             pivot_longer(cols = everything(), names_to = "Player", values_to = "Character") %>%
             count(Character)
-
         character_counts <- character_counts %>%
             mutate(Character = fct_reorder(Character, n, .desc = TRUE))
-
         ggplot(character_counts, aes(x = Character, y = n, fill = Character)) +
             geom_bar(stat = "identity") +
             labs(title = paste(dict[["Character Distribution"]][[input$language]], "(", comma(total_samples() / 4), dict[["matches"]][[input$language]], ")"), x = "Character", y = "Count") +
@@ -367,35 +391,11 @@ server <- function(input, output, session) {
             )
     })
 
-    # Character distribution plot
-    output$stageDistPlot <- renderPlot({
-        stage_counts <- filtered_data() %>%
-            select(stage) %>%
-            pivot_longer(cols = everything(), values_to = "Stage") %>%
-            count(Stage)
-
-        stage_counts <- stage_counts %>%
-            mutate(Stage = fct_reorder(Stage, n, .desc = TRUE))
-
-        ggplot(stage_counts, aes(x = Stage, y = n, fill = Stage)) +
-            geom_bar(stat = "identity") +
-            labs(title = paste(dict[["Stage Distribution"]][[input$language]], "(", comma(total_samples() / 4), dict[["matches"]][[input$language]], ")"), x = "Stage", y = "Count") +
-            theme_minimal() +
-            theme(
-                axis.text.x = element_text(angle = 45, hjust = 1, size = 14), plot.margin = margin(b = 15),
-                plot.title = element_text(size = 20, face = "bold"), # Title font size
-                axis.title.y = element_text(size = 16), # Y-axis label font size
-                axis.text.y = element_text(size = 14),
-                legend.title = element_text(size = 0), # Legend title font size
-                legend.text = element_text(size = 10),
-                legend.position = "none"
-            )
-    })
 
     # Calculate and render overall win rates per character
-    # output$win_rate_table <- renderTable(win_percentage_table)
+    output$win_rate_table <- renderTable(win_percentage_table)
 
-    # output$character_matchup_table <- renderTable(character_matchup)
+    output$character_matchup_table <- renderTable(character_matchup)
     output$youtube_videos_table <- DT::renderDataTable({
         datatable(youtube_video_data(), escape = FALSE, options = list(lengthChange = FALSE, searching = FALSE))
     })
@@ -408,7 +408,7 @@ server <- function(input, output, session) {
     })
 
     output$time_remaining_per_stage <- DT::renderDataTable({
-        datatable(time_remaining_per_stage(), options = list(paging = FALSE, searching = FALSE)) %>%
+        datatable(time_remaining_per_stage_data, options = list(paging = FALSE, searching = FALSE)) %>%
             formatRound("Average_Time_Per_Round", digits = 1) %>%
             formatRound("p_value", digits = 3) %>%
             formatStyle(
@@ -418,7 +418,7 @@ server <- function(input, output, session) {
     })
 
     output$win_rate_per_rank <- DT::renderDataTable({
-        datatable(win_rate_per_rank(), options = list(paging = TRUE, searching = FALSE)) %>%
+        datatable(win_rate_per_rank_data, options = list(paging = TRUE, searching = FALSE)) %>%
             formatPercentage("win_percentage", digits = 0)
     })
 
