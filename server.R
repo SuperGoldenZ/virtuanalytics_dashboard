@@ -9,7 +9,7 @@ library(DT) # Load DT package for interactive tables
 
 source("ui.R")
 source("R/analytics.R")
-source("R/analytics_character.R")
+if (!exists("character_names")) source("R/analytics_character.R")
 source("R/analytics_rounds.R")
 
 dict <- list(
@@ -94,12 +94,7 @@ create_character_tables <- function(output, data, character_name) {
     })
 
     output[[paste0(l_character_name, "_matches_list")]] <- DT::renderDataTable({
-        matches_list <- match_data %>%
-            filter(Player.1.Character == character_name | Player.2.Character == character_name) %>%
-            mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
-            select(Stage, Desc, Link)
-
-        datatable(matches_list, escape = FALSE, options = list(lengthChange = FALSE, searching = TRUE))
+        datatable(matches_list[[character_name]], escape = FALSE, options = list(lengthChange = FALSE, searching = TRUE))
     })
 
     # output[[paste0(l_character_name, "_win_probability_per_round")]] <- DT::renderDataTable({
