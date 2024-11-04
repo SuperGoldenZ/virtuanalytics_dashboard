@@ -581,3 +581,10 @@ win_rate_per_rank <- function() {
         ungroup()
     return(win_percentage_lookup)
 }
+
+win_rate_per_rank_data <- win_rate_per_rank()
+time_remaining_per_stage_data <- time_remaining_per_stage()
+
+youtube_video_data_all <- match_data %>%
+    mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
+    select(Stage, Desc, Link)
