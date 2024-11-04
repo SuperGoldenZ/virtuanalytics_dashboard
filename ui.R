@@ -9,7 +9,7 @@ library(DT) # Load DT package for interactive tables
 library(shinycssloaders)
 
 source("R/analytics.R")
-source("R/analytics_character.R")
+if (!exists("character_names")) source("R/analytics_character.R")
 
 generate_character_tab <- function(character) {
     tabPanel(
