@@ -18,88 +18,6 @@ stage_types <- data.frame(
     )
 )
 
-win_percentages_per_character <- function(data, character_name) {
-    stage_type_lookup <- data.frame(
-        Stage = c(
-            "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
-            "Broken House", "Grassland", "Aurora", "Island", "Statues",
-            "Terrace", "Snow Mountain", "Training Room", "Shrine", "Temple",
-            "River", "Sumo Ring", "Genesis", "Great Wall"
-        ),
-        Stage.Type = c(
-            "Rectangle", "Rectangle", "Full Fence", "Full Fence", "Octagon", "Octagon",
-            "Breakable Full Fence", "Breakable Full Fence", "Breakable Half Fence",
-            "Breakable Half Fence", "Half Fence", "Half Fence", "Full Fence and Open",
-            "Full Fence and Open", "Low Fence", "Low Fence", "Open", "Open",
-            "Single Wall", "Single Wall"
-        )
-    )
-
-    # Add Stage Type to data based on the lookup
-    stage_data <- data %>%
-        left_join(stage_type_lookup, by = "Stage")
-
-    # Filter for matches where Blaze is one of the players, but not both
-    blaze_data <- stage_data %>%
-        filter((Player.1.Character == character_name & Player.2.Character != character_name) |
-            (Player.2.Character == character_name & Player.1.Character != character_name))
-
-    # Determine the winner of the match (the character that won the last round)
-    match_winners <- blaze_data %>%
-        group_by(Match.ID) %>%
-        filter(round_number == max(round_number)) %>%
-        mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
-        select(Match.ID, Winner_Character, Stage.Type)
-
-    # Total number of matches Blaze played in each stage category
-    blaze_played_in_stage <- blaze_data %>%
-        group_by(Match.ID, Stage.Type) %>%
-        summarise(Total_Matches = n_distinct(Match.ID), .groups = "drop") %>%
-        group_by(Stage.Type) %>%
-        summarise(Total_Matches = sum(Total_Matches), .groups = "drop")
-
-    # Total number of matches Blaze won in each stage category
-    blaze_wins <- match_winners %>%
-        filter(Winner_Character == character_name) %>%
-        group_by(Stage.Type) %>%
-        summarise(Matches_Won = n(), .groups = "drop")
-
-    # Merge total matches and matches won, and calculate win percentage
-    blaze_win_percentage <- blaze_played_in_stage %>%
-        left_join(blaze_wins, by = "Stage.Type") %>%
-        mutate(
-            Matches_Won = ifelse(is.na(Matches_Won), 0, Matches_Won), # Handle cases with no wins
-            Win_Percentage = (Matches_Won / Total_Matches) # Calculate win percentage
-        ) %>%
-        arrange(desc(Win_Percentage)) # Sort by win percentage in descending order
-
-    blaze_win_percentage$p_value <- NA
-
-    # Rename columns for clarity
-    blaze_win_percentage <- blaze_win_percentage %>%
-        rename(
-            Stage.Category = Stage.Type,
-            Matches.Won = Matches_Won,
-            Total.Matches = Total_Matches,
-            Win.Percentage = Win_Percentage
-        )
-
-    for (stage in unique(data$Stage)) {
-        rounds_won_specific <- rounds_won_per_stage_per_character(data, character_name, stage)
-        rounds_won_other <- rounds_won_per_other_stages_per_character(data, character_name, stage)
-
-        t_test_result <- t.test(rounds_won_specific, rounds_won_other)
-
-        blaze_win_percentage$p_value[blaze_win_percentage$Stage.Category == get_stage_type(stage, stage_type_lookup)] <- t_test_result$p.value
-    }
-
-    blaze_win_percentage <- blaze_win_percentage %>%
-        rename(
-            `Win %` = Win.Percentage
-        )
-    return(blaze_win_percentage)
-}
-
 get_stage_type <- function(stage_name, lookup_table) {
     result <- lookup_table %>%
         filter(Stage == stage_name) %>%
@@ -581,3 +499,10 @@ win_rate_per_rank <- function() {
         ungroup()
     return(win_percentage_lookup)
 }
+
+win_rate_per_rank_data <- win_rate_per_rank()
+time_remaining_per_stage_data <- time_remaining_per_stage()
+
+youtube_video_data_all <- match_data %>%
+    mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
+    select(Stage, Desc, Link)

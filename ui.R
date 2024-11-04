@@ -6,9 +6,10 @@ library(plotly)
 library(scales)
 library(shinyfullscreen)
 library(DT) # Load DT package for interactive tables
+library(shinycssloaders)
 
 source("R/analytics.R")
-source("R/analytics_character.R")
+if (!exists("character_names")) source("R/analytics_character.R")
 
 generate_character_tab <- function(character) {
     tabPanel(
@@ -30,7 +31,7 @@ generate_character_tab <- function(character) {
             column(
                 4,
                 DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_table")),
-                plotOutput(paste0(tolower(character), "_win_probability_per_round")),
+                withSpinner(plotOutput(paste0(tolower(character), "_win_probability_per_round"))),
                 DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_and_stage_table")),
             )
         )
@@ -138,16 +139,16 @@ ui <- fluidPage(
                 column(
                     8,
                     fluidRow(
-                        column(6, plotOutput("rankDistPlot")),
+                        column(6, withSpinner(plotOutput("rankDistPlot"))),
                         column(4, DT::dataTableOutput("win_rate_per_rank"))
                     ),
                     fluidRow(
-                        column(6, plotOutput("stageDistPlot")),
+                        column(6, withSpinner(plotOutput("stageDistPlot"))),
                         column(4, DT::dataTableOutput("time_remaining_per_stage")),
                     ),
                     fluidRow(
                         column(
-                            6, plotOutput("win_method_piechart"),
+                            6, withSpinner(plotOutput("win_method_piechart")),
                             DT::dataTableOutput("how_rounds_end_per_stage")
                         ),
                         column(
@@ -157,7 +158,7 @@ ui <- fluidPage(
                         )
                     ),
                     fluidRow(
-                        column(6, plotOutput("characterDistPlot")),
+                        column(6, withSpinner(plotOutput("characterDistPlot"))),
                         column(
                             4,
                             DT::dataTableOutput("win_rate_table"),
@@ -168,8 +169,6 @@ ui <- fluidPage(
                 )
             ),
         ),
-
-        # lapply(characters, generate_character_tab),
         generate_character_tab("Akira"),
         generate_character_tab("Aoi"),
         generate_character_tab("Brad"),
@@ -192,7 +191,7 @@ ui <- fluidPage(
         tabPanel(
             "About",
             tags$p(
-                "VirtuAnalytics v1.2.2"
+                "VirtuAnalytics v1.2.3"
             ),
             tags$hr(),
             tags$p(

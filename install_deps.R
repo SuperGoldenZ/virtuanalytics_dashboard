@@ -25,7 +25,7 @@ install_if_needed <- function(pkgs) {
 }
 
 # Core packages
-install_if_needed(c("shiny", "ggplot2", "dplyr", "tidyr", "plotly", "shinyfullscreen", "DT", "forcats"))
+install_if_needed(c("shiny", "ggplot2", "dplyr", "tidyr", "plotly", "shinyfullscreen", "DT", "forcats", "shinycssloaders"))
 
 # Autodetect packages needed for the examples (will install from CRAN)
 install_if_needed(packrat:::dirDependencies("."))
