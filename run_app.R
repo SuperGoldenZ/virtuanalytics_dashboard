@@ -1,6 +1,6 @@
 library(shiny)
 
-source("R/analytics_character.R")
+source("R/analytics.R")
 source("ui.R")
 source("server.R")
 
