@@ -15,15 +15,13 @@ generate_character_tab <- function(character) {
     tabPanel(
         uiOutput(paste0(character, "Button")),
         fluidRow(
-            tags$p(paste(count_character_matches(data, character), " total matches"))
-        ),
-        fluidRow(
-            column(
-                3,
-                DT::dataTableOutput(paste0(tolower(character), "_matches_list")),
-            ),
+            img(src = paste("images/", character, ".webp", sep = ""), width = "20%", class = "character-image"),
             column(
                 4,
+                fluidRow(
+                    tags$p(paste(count_character_matches(data, character), " total matches"))
+                ),
+                DT::dataTableOutput(paste0(tolower(character), "_matches_list")),
                 DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_table"))
                 # DT::dataTableOutput(paste0(tolower(character), "_match_wins_per_stage_lookup_table")),
                 # DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_lookup_table"))
@@ -76,9 +74,16 @@ ui <- fluidPage(
           box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow for better visibility */
       }
 
-      /*body {
-        background-color: #9c7c70;
-      }*/
+    .character-image {
+        position: sticky;
+        top: 100px; /* Adjust this value to control the vertical offset */
+        z-index: 1001;
+      }
+
+      .parent-container {
+        overflow: visible;
+        min-height: 100%; /* or any height that ensures scroll space */
+        }
     "))
     ),
     navbarPage(
