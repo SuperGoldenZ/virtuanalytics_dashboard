@@ -492,8 +492,9 @@ win_rate_per_rank <- function() {
         group_by(Winner_Rank, Loser_Rank) %>%
         summarise(
             wins = n(), # Count the number of wins
-            total_matches = n() + sum(match_winners$Loser_Rank == Winner_Rank & match_winners$Winner_Rank == Loser_Rank), # Total matches involving this rank combination
-            win_percentage = wins / total_matches # Calculate win percentage
+            total_matches = n() + sum(match_winners$Loser_Rank %in% Winner_Rank & match_winners$Winner_Rank %in% Loser_Rank), # Total matches involving this rank combination
+            win_percentage = wins / total_matches, # Calculate win percentage
+            .groups = "drop"
         ) %>%
         select(Target_Rank = Winner_Rank, Other_Rank = Loser_Rank, win_percentage) %>%
         ungroup()

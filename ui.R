@@ -8,7 +8,7 @@ library(shinyfullscreen)
 library(DT) # Load DT package for interactive tables
 library(shinycssloaders)
 
-source("R/analytics.R")
+if (!exists("win_rate_per_rank")) source("R/analytics.R")
 if (!exists("character_names")) source("R/analytics_character.R")
 
 generate_character_tab <- function(character) {

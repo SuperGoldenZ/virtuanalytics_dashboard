@@ -8,7 +8,7 @@ library(forcats)
 library(DT) # Load DT package for interactive tables
 
 source("ui.R")
-source("R/analytics.R")
+if (!exists("win_rate_per_rank")) source("R/analytics.R")
 if (!exists("character_names")) source("R/analytics_character.R")
 source("R/analytics_rounds.R")
 
@@ -312,6 +312,7 @@ server <- function(input, output, session) {
             select(player_rank) %>%
             pivot_longer(cols = everything(), names_to = "Player", values_to = "Rank") %>%
             count(Rank)
+        rank_counts$Rank <- factor(rank_counts$Rank)
 
         ggplot(rank_counts, aes(x = Rank, y = n, fill = Rank)) +
             geom_bar(stat = "identity") +
