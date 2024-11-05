@@ -342,7 +342,7 @@ server <- function(input, output, session) {
         # , fill = Time.Seconds
         ggplot(time_counts, aes(x = Time.Seconds, y = n, fill = Time.Seconds)) +
             geom_bar(stat = "identity") +
-            labs(title = "Time Per Round", x = "Time Per Round", y = "Match Count") +
+            labs(title = "Time Per Round", x = "Time Per Round", y = "Round Count") +
             theme_minimal() +
             geom_text(aes(x = 5.0, y = 2500, label = paste("Fastest:", min_point)), hjust = 0, vjust = -1, color = "black", size = 8) +
             geom_text(aes(x = 5.0, y = 2250, label = paste("Longest:", max_point)), hjust = 0, vjust = -1, color = "black", size = 8) +
