@@ -404,6 +404,17 @@ count_character_matches <- function(data, character_name) {
         (Player.2.Character == character_name & Player.1.Character != character_name))))
 }
 
+time_remaining_per_stage_dist <- function() {
+    # Filter rows where "How Round Ended" is NA
+    filtered_data <- data %>% filter(round_number > 0)
+
+    # Apply floor function to round down the "Time Remaining" to the nearest integer
+    filtered_data <- filtered_data %>%
+        mutate(Time.Seconds = floor(45 - Time.Remaining.When.Round.Ended))
+
+    return(filtered_data)
+}
+
 time_remaining_per_stage <- function() {
     # Filter rows where "How Round Ended" is NA
     filtered_data <- data %>% filter(round_number > 0)
@@ -507,3 +518,12 @@ time_remaining_per_stage_data <- time_remaining_per_stage()
 youtube_video_data_all <- match_data %>%
     mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
     select(Stage, Desc, Link)
+
+time_counts <- time_remaining_per_stage_dist() %>%
+    select(Time.Seconds)
+
+min_point <- min(time_counts$Time.Seconds)
+max_point <- max(time_counts$Time.Seconds)
+
+time_counts <- time_counts %>%
+    count(Time.Seconds)
