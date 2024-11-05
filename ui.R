@@ -148,8 +148,14 @@ ui <- fluidPage(
                         column(4, DT::dataTableOutput("win_rate_per_rank"))
                     ),
                     fluidRow(
-                        column(6, withSpinner(plotOutput("stageDistPlot"))),
-                        column(4, DT::dataTableOutput("time_remaining_per_stage")),
+                        column(
+                            6, withSpinner(plotOutput("stageDistPlot")),
+                            withSpinner(plotOutput("timeRemainingDistPlot"))
+                        ),
+                        column(
+                            4,
+                            DT::dataTableOutput("time_remaining_per_stage")
+                        )
                     ),
                     fluidRow(
                         column(
