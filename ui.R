@@ -15,10 +15,7 @@ generate_character_tab <- function(character) {
     tabPanel(
         uiOutput(paste0(character, "Button")),
         fluidRow(
-            column(
-                3,
-                img(src = paste("/images/", character, ".webp", sep = ""), width = "100%", position = "absolute")
-            ),
+            img(src = paste("/images/", character, ".webp", sep = ""), width = "20%", class = "character-image"),
             column(
                 4,
                 fluidRow(
@@ -77,9 +74,16 @@ ui <- fluidPage(
           box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow for better visibility */
       }
 
-      /*body {
-        background-color: #9c7c70;
-      }*/
+    .character-image {
+        position: sticky;
+        top: 35px; /* Adjust this value to control the vertical offset */
+        z-index: 1001;
+      }
+
+      .parent-container {
+        overflow: visible;
+        min-height: 100%; /* or any height that ensures scroll space */
+        }
     "))
     ),
     navbarPage(
