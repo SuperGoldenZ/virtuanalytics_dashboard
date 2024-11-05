@@ -15,15 +15,16 @@ generate_character_tab <- function(character) {
     tabPanel(
         uiOutput(paste0(character, "Button")),
         fluidRow(
-            tags$p(paste(count_character_matches(data, character), " total matches"))
-        ),
-        fluidRow(
             column(
                 3,
-                DT::dataTableOutput(paste0(tolower(character), "_matches_list")),
+                img(src = paste("/images/", character, ".webp", sep = ""), width = "100%", position = "absolute")
             ),
             column(
                 4,
+                fluidRow(
+                    tags$p(paste(count_character_matches(data, character), " total matches"))
+                ),
+                DT::dataTableOutput(paste0(tolower(character), "_matches_list")),
                 DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_table"))
                 # DT::dataTableOutput(paste0(tolower(character), "_match_wins_per_stage_lookup_table")),
                 # DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_lookup_table"))
