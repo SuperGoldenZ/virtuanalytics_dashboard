@@ -15,7 +15,7 @@ generate_character_tab <- function(character) {
     tabPanel(
         uiOutput(paste0(character, "Button")),
         fluidRow(
-            img(src = paste("/images/", character, ".webp", sep = ""), width = "20%", class = "character-image"),
+            img(src = paste("images/", character, ".webp", sep = ""), width = "20%", class = "character-image"),
             column(
                 4,
                 fluidRow(
@@ -76,7 +76,7 @@ ui <- fluidPage(
 
     .character-image {
         position: sticky;
-        top: 35px; /* Adjust this value to control the vertical offset */
+        top: 100px; /* Adjust this value to control the vertical offset */
         z-index: 1001;
       }
 
