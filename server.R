@@ -477,10 +477,28 @@ server <- function(input, output, session) {
     })
 
     output$loss_methods_by_character <- DT::renderDataTable({
-        datatable(how_rounds_lost_data(data), options = list(paging = FALSE, searching = FALSE)) %>%
+        rd <- how_rounds_lost_data(data)
+        rd <- rd[,c(1, 5, 3, 6, 4, 7, 2, 8)]
+
+        datatable(rd, options = list(paging = FALSE, searching = FALSE)) %>%
             formatPercentage("KO", digits = 1) %>%
             formatPercentage("EX", digits = 1) %>%
-            formatPercentage("RO", digits = 1)
+            formatPercentage("RO", digits = 1) %>%
+            formatRound("ro_p_value", digits = 3) %>%
+            formatRound("ex_p_value", digits = 3) %>%
+            formatRound("ko_p_value", digits = 3) %>%
+            formatStyle(
+                "ro_p_value",
+                backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+            ) %>%
+            formatStyle(
+                "ko_p_value",
+                backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+            ) %>%
+            formatStyle(
+                "ex_p_value",
+                backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+            )
     })
 
     output$how_rounds_end_per_stage <- DT::renderDataTable({
