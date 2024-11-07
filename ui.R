@@ -164,16 +164,18 @@ ui <- fluidPage(
                         ),
                         column(
                             4,
-                            DT::dataTableOutput("win_methods_by_character"),
-                            DT::dataTableOutput("loss_methods_by_character")
+                            checkboxInput("win_method_sig", label="Show Significance"),
+                            withSpinner(DT::dataTableOutput("win_methods_by_character")),
+                            checkboxInput("loss_method_sig", label="Show Significance"),
+                            withSpinner(DT::dataTableOutput("loss_methods_by_character"))
                         )
                     ),
                     fluidRow(
                         column(6, withSpinner(plotOutput("characterDistPlot"))),
                         column(
                             4,
-                            DT::dataTableOutput("win_rate_table"),
-                            DT::dataTableOutput("character_matchup_table")
+                            withSpinner(DT::dataTableOutput("win_rate_table")),
+                            withSpinner(DT::dataTableOutput("character_matchup_table"))
                         )
                     ),
                     fullscreen_those(items = list("characterDistPlot", "rankDistPlot", "stageDistPlot")),
