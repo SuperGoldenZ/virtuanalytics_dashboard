@@ -7,10 +7,10 @@ library(scales)
 library(forcats)
 library(DT) # Load DT package for interactive tables
 
-source("ui.R")
+if (!exists("ui")) source("ui.R")
 if (!exists("win_rate_per_rank")) source("R/analytics.R")
 if (!exists("character_names")) source("R/analytics_character.R")
-source("R/analytics_rounds.R")
+if (!exists("how_rounds_lost_data")) source("R/analytics_rounds.R")
 
 dict <- list(
     "Ranks" = c("English" = "Ranks", "日本語" = "段位"),
@@ -306,6 +306,13 @@ server <- function(input, output, session) {
     output$JeanButton <- renderText(dict[["Jean"]][[selected_language()]])
 
 
+    output$rank_win_rate_plot <- renderPlot({
+        ggplot(win_rate_plot_data, aes(x = `vs Rank`, y = `Win %`, color = as.factor(`Target_Rank`))) +
+            geom_line() +
+            labs(color = "Player Rank")
+    })
+
+
     # Rank distribution plot
     output$rankDistPlot <- renderPlot({
         rank_counts <- filtered_data() %>%
@@ -325,6 +332,31 @@ server <- function(input, output, session) {
             ) +
             theme_minimal() +
             scale_x_discrete(limits = rank_counts$Rank) +
+            theme(
+                plot.margin = margin(b = 15),
+                plot.title = element_text(size = 20, face = "bold"), # Title font size
+                axis.title.x = element_text(size = 16), # X-axis label font size
+                axis.title.y = element_text(size = 16), # Y-axis label font size
+                axis.text.x = element_text(size = 14), # X-axis tick label font size
+                axis.text.y = element_text(size = 14),
+                legend.title = element_text(size = 16), # Legend title font size
+                legend.text = element_text(size = 14),
+                legend.position = "none"
+            )
+    })
+
+    output$rankDistPlotStatic <- renderPlot({
+        ggplot(rank_counts_static, aes(x = Rank, y = n, fill = Rank)) +
+            geom_bar(stat = "identity") +
+            labs(
+                title = paste(
+                    dict[["Rank Distribution"]][[input$language]], "(", comma(total_samples() / 4),
+                    dict[["matches"]][[input$language]], ")"
+                ),
+                x = dict[["Ranks"]][[input$language]], y = dict[["matches"]][[input$language]]
+            ) +
+            theme_minimal() +
+            scale_x_discrete(limits = rank_counts_static$Rank) +
             theme(
                 plot.margin = margin(b = 15),
                 plot.title = element_text(size = 20, face = "bold"), # Title font size
@@ -425,21 +457,22 @@ server <- function(input, output, session) {
     observeEvent(input$time_remaining_sig, {
         df <- time_remaining_per_stage_data
         if (input$time_remaining_sig) {
-            df <- df[, c(1,2,3,4,5)]
+            df <- df[, c(1, 2, 3, 4, 5)]
         } else {
-            df <- df[, c(1,2,3,4)]
+            df <- df[, c(1, 2, 3, 4)]
         }
         output$time_remaining_per_stage <- DT::renderDataTable({
             t <- datatable(df, options = list(paging = FALSE, searching = FALSE)) %>%
                 formatRound("Average_Time_Per_Round", digits = 1)
             if (input$time_remaining_sig) {
-                t <- t %>% formatRound("p_value", digits = 3) %>%
-                formatStyle(
-                    "p_value",
-                    backgroundColor = styleInterval(c(0.05), c("yellow", ""))
-                )
+                t <- t %>%
+                    formatRound("p_value", digits = 3) %>%
+                    formatStyle(
+                        "p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    )
             }
-            return (t)
+            return(t)
         })
     })
 
