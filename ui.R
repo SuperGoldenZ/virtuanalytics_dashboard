@@ -115,6 +115,19 @@ ui <- fluidPage(
       ),
     ),
     tabPanel(
+      "Stages",
+      fluidRow(
+        column(
+          6, withSpinner(plotOutput("stageDistPlot")),
+        ),
+        column(
+          4,
+          checkboxInput("time_remaining_sig", label = "Show Significance"),
+          withSpinner(DT::dataTableOutput("time_remaining_per_stage"))
+        )
+      )
+    ),
+    tabPanel(
       uiOutput("VideoSearch"),
       fluidRow(
         column(
@@ -158,15 +171,7 @@ ui <- fluidPage(
         column(
           8,
           fluidRow(
-            column(
-              6, withSpinner(plotOutput("stageDistPlot")),
-              withSpinner(plotOutput("timeRemainingDistPlot"))
-            ),
-            column(
-              4,
-              checkboxInput("time_remaining_sig", label = "Show Significance"),
-              withSpinner(DT::dataTableOutput("time_remaining_per_stage"))
-            )
+            withSpinner(plotOutput("timeRemainingDistPlot"))
           ),
           fluidRow(
             column(
