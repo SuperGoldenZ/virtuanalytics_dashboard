@@ -309,7 +309,17 @@ server <- function(input, output, session) {
     output$rank_win_rate_plot <- renderPlot({
         ggplot(win_rate_plot_data, aes(x = `vs Rank`, y = `Win %`, color = as.factor(`Target_Rank`))) +
             geom_line() +
-            labs(color = "Player Rank")
+            labs(color = "Player Rank") +
+            scale_x_discrete(limits = win_rate_plot_data$`vs Rank`) +
+            theme(
+                axis.text.x = element_text(angle = 45, hjust = 1, size = 14), plot.margin = margin(b = 15),
+                plot.title = element_text(size = 20, face = "bold"), # Title font size
+                axis.title.x = element_text(size = 16), # X-axis label font size
+                axis.title.y = element_text(size = 16), # Y-axis label font size
+                axis.text.y = element_text(size = 14),
+                legend.title = element_text(size = 16), # Legend title font size
+                legend.text = element_text(size = 14)
+            )
     })
 
 
