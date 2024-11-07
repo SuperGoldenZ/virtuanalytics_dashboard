@@ -422,14 +422,25 @@ server <- function(input, output, session) {
         datatable(character_matchup, options = list(paging = FALSE, searching = FALSE)) %>% formatPercentage("Win_Percentage", digits = 0)
     })
 
-    output$time_remaining_per_stage <- DT::renderDataTable({
-        datatable(time_remaining_per_stage_data, options = list(paging = FALSE, searching = FALSE)) %>%
-            formatRound("Average_Time_Per_Round", digits = 1) %>%
-            formatRound("p_value", digits = 3) %>%
-            formatStyle(
-                "p_value",
-                backgroundColor = styleInterval(c(0.05), c("yellow", ""))
-            )
+    observeEvent(input$time_remaining_sig, {
+        df <- time_remaining_per_stage_data
+        if (input$time_remaining_sig) {
+            df <- df[, c(1,2,3,4,5)]
+        } else {
+            df <- df[, c(1,2,3,4)]
+        }
+        output$time_remaining_per_stage <- DT::renderDataTable({
+            t <- datatable(df, options = list(paging = FALSE, searching = FALSE)) %>%
+                formatRound("Average_Time_Per_Round", digits = 1)
+            if (input$time_remaining_sig) {
+                t <- t %>% formatRound("p_value", digits = 3) %>%
+                formatStyle(
+                    "p_value",
+                    backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                )
+            }
+            return (t)
+        })
     })
 
     output$win_rate_per_rank <- DT::renderDataTable({
@@ -469,18 +480,80 @@ server <- function(input, output, session) {
             )
     })
 
-    output$win_methods_by_character <- DT::renderDataTable({
-        datatable(how_rounds_won_data(data), options = list(paging = FALSE, searching = FALSE)) %>%
-            formatPercentage("KO", digits = 1) %>%
-            formatPercentage("EX", digits = 1) %>%
-            formatPercentage("RO", digits = 1)
+    observeEvent(input$win_method_sig, {
+        output$win_methods_by_character <- DT::renderDataTable({
+            rd <- how_rounds_won_data(data)
+            if (input$win_method_sig) {
+                rd <- rd[, c(1, 5, 3, 6, 4, 7, 2, 8)]
+            } else {
+                rd <- rd[, c(1, 5, 3, 4, 2)]
+            }
+
+
+            t <- datatable(rd, options = list(paging = FALSE, searching = FALSE)) %>%
+                formatPercentage("KO", digits = 1) %>%
+                formatPercentage("EX", digits = 1) %>%
+                formatPercentage("RO", digits = 1)
+            if (input$win_method_sig) {
+                t <- t %>%
+                    formatRound("ro_p_value", digits = 3) %>%
+                    formatRound("ex_p_value", digits = 3) %>%
+                    formatRound("ko_p_value", digits = 3) %>%
+                    formatStyle(
+                        "ro_p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    ) %>%
+                    formatStyle(
+                        "ko_p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    ) %>%
+                    formatStyle(
+                        "ex_p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    )
+            }
+            return(t)
+        })
     })
 
-    output$loss_methods_by_character <- DT::renderDataTable({
-        datatable(how_rounds_lost_data(data), options = list(paging = FALSE, searching = FALSE)) %>%
-            formatPercentage("KO", digits = 1) %>%
-            formatPercentage("EX", digits = 1) %>%
-            formatPercentage("RO", digits = 1)
+
+    observeEvent(input$loss_method_sig, {
+        output$loss_methods_by_character <- DT::renderDataTable({
+            rd <- how_rounds_lost_data(data)
+
+            if (input$loss_method_sig) {
+                rd <- rd[, c(1, 5, 3, 6, 4, 7, 2, 8)]
+            } else {
+                rd <- rd[, c(1, 5, 3, 4, 2)]
+            }
+
+
+            t <- datatable(rd, options = list(paging = FALSE, searching = FALSE)) %>%
+                formatPercentage("KO", digits = 1) %>%
+                formatPercentage("EX", digits = 1) %>%
+                formatPercentage("RO", digits = 1)
+
+            if (input$loss_method_sig) {
+                t <- t %>%
+                    formatRound("ro_p_value", digits = 3) %>%
+                    formatRound("ex_p_value", digits = 3) %>%
+                    formatRound("ko_p_value", digits = 3) %>%
+                    formatStyle(
+                        "ro_p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    ) %>%
+                    formatStyle(
+                        "ko_p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    ) %>%
+                    formatStyle(
+                        "ex_p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    )
+            }
+
+            return(t)
+        })
     })
 
     output$how_rounds_end_per_stage <- DT::renderDataTable({
