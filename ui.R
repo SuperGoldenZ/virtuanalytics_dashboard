@@ -145,7 +145,10 @@ ui <- fluidPage(
                     8,
                     fluidRow(
                         column(6, withSpinner(plotOutput("rankDistPlot"))),
-                        column(4, DT::dataTableOutput("win_rate_per_rank"))
+                        column(
+                            4,
+                            withSpinner(DT::dataTableOutput("win_rate_per_rank"))
+                        )
                     ),
                     fluidRow(
                         column(
@@ -154,7 +157,8 @@ ui <- fluidPage(
                         ),
                         column(
                             4,
-                            DT::dataTableOutput("time_remaining_per_stage")
+                            checkboxInput("time_remaining_sig", label = "Show Significance"),
+                            withSpinner(DT::dataTableOutput("time_remaining_per_stage"))
                         )
                     ),
                     fluidRow(
@@ -164,9 +168,9 @@ ui <- fluidPage(
                         ),
                         column(
                             4,
-                            checkboxInput("win_method_sig", label="Show Significance"),
+                            checkboxInput("win_method_sig", label = "Show Significance"),
                             withSpinner(DT::dataTableOutput("win_methods_by_character")),
-                            checkboxInput("loss_method_sig", label="Show Significance"),
+                            checkboxInput("loss_method_sig", label = "Show Significance"),
                             withSpinner(DT::dataTableOutput("loss_methods_by_character"))
                         )
                     ),

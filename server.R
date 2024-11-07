@@ -422,14 +422,25 @@ server <- function(input, output, session) {
         datatable(character_matchup, options = list(paging = FALSE, searching = FALSE)) %>% formatPercentage("Win_Percentage", digits = 0)
     })
 
-    output$time_remaining_per_stage <- DT::renderDataTable({
-        datatable(time_remaining_per_stage_data, options = list(paging = FALSE, searching = FALSE)) %>%
-            formatRound("Average_Time_Per_Round", digits = 1) %>%
-            formatRound("p_value", digits = 3) %>%
-            formatStyle(
-                "p_value",
-                backgroundColor = styleInterval(c(0.05), c("yellow", ""))
-            )
+    observeEvent(input$time_remaining_sig, {
+        df <- time_remaining_per_stage_data
+        if (input$time_remaining_sig) {
+            df <- df[, c(1,2,3,4,5)]
+        } else {
+            df <- df[, c(1,2,3,4)]
+        }
+        output$time_remaining_per_stage <- DT::renderDataTable({
+            t <- datatable(df, options = list(paging = FALSE, searching = FALSE)) %>%
+                formatRound("Average_Time_Per_Round", digits = 1)
+            if (input$time_remaining_sig) {
+                t <- t %>% formatRound("p_value", digits = 3) %>%
+                formatStyle(
+                    "p_value",
+                    backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                )
+            }
+            return (t)
+        })
     })
 
     output$win_rate_per_rank <- DT::renderDataTable({
