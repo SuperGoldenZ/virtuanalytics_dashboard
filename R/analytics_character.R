@@ -1,6 +1,6 @@
 library(dplyr)
 
-source("R/analytics_stage.R")
+if (!exists("stage_type_lookup")) source("R/analytics_stage.R")
 
 character_names <- list(
     "Akira" = c("English" = "Akira", "日本語" = "晶"),
