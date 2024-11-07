@@ -121,7 +121,7 @@ ui <- fluidPage(
           6, withSpinner(plotOutput("stageDistPlot")),
         ),
         column(
-          4,
+          6,
           checkboxInput("time_remaining_sig", label = "Show Significance"),
           withSpinner(DT::dataTableOutput("time_remaining_per_stage"))
         )
