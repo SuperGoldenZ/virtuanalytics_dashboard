@@ -274,7 +274,8 @@ server <- function(input, output, session) {
     })
 
     output$MatchList <- renderText(dict[["Match List"]][[selected_language()]])
-    output$VideoSearch <- renderText(dict[["Video Search"]][[selected_language()]])
+    # output$VideoSearch <- renderText(dict[["Video Search"]][[selected_language()]])
+    output$VideoSearch <- renderText("Video<br/>Search")
     output$Ranks <- renderText(dict[["Ranks"]][[selected_language()]])
     output$Stages <- renderText(dict[["Stages"]][[selected_language()]])
     output$Characters <- renderText(dict[["Characters"]][[selected_language()]])
@@ -448,6 +449,34 @@ server <- function(input, output, session) {
             )
     })
 
+    output$characterDistPie <- renderPlot({
+        character_counts <- filtered_data() %>%
+            select(character) %>%
+            # mutate(character = sapply(character, function(char) dict[[char]][[input$language]])) %>%
+            pivot_longer(cols = everything(), names_to = "Player", values_to = "Character") %>%
+            count(Character)
+        character_counts <- character_counts %>%
+            mutate(Character = fct_reorder(Character, n, .desc = TRUE))
+
+        # character_counts$percentage <- character_counts$value / sum(data$value) * 100
+
+        ggplot(character_counts, aes(x = "", y = n, fill = Character)) +
+            geom_bar(stat = "identity", width = 1) +
+            coord_polar("y", start = 0) +
+            geom_text(
+                aes(label = ifelse(n / sum(n) > 0.0,
+                    paste0(Character, "\n", round((n / sum(n)) * 100, 1), "%"), ""
+                )),
+                position = position_stack(vjust = 0.5), size = 4
+            ) + # Only show labels for slices >5%
+            theme_void() +
+            theme(
+                plot.title = element_text(size = 20, face = "bold"), # Title font size
+                legend.title = element_text(size = 0), # Legend title font size
+                legend.text = element_text(size = 10),
+                legend.position = "none"
+            )
+    })
 
     # Calculate and render overall win rates per character
     output$win_rate_table <- renderTable(win_percentage_table)

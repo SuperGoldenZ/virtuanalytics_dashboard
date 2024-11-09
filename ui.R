@@ -87,7 +87,7 @@ ui <- fluidPage(
     "))
   ),
   navbarPage(
-    "VirtuaAnalytics",
+    "",
     header = tagList(
       div(
         radioButtons(
@@ -99,6 +99,21 @@ ui <- fluidPage(
         ),
         style = "position: relative; float: right; margin-right: 20px;margin-top: -50px; z-index: 9999; "
       )
+    ),
+    tabPanel(
+      "Characters",
+      fluidRow(
+        column(
+          6,
+          withSpinner(plotOutput("characterDistPlot")),
+          withSpinner(plotOutput("characterDistPie", width = "600px", height = "600px"))
+        ),
+        column(
+          6,
+          withSpinner(DT::dataTableOutput("win_rate_table")),
+          withSpinner(DT::dataTableOutput("character_matchup_table"))
+        )
+      ),
     ),
     tabPanel(
       "Ranks",
@@ -128,10 +143,29 @@ ui <- fluidPage(
       )
     ),
     tabPanel(
+      "Rounds",
+      fluidRow(
+        withSpinner(plotOutput("timeRemainingDistPlot"))
+      ),
+      fluidRow(
+        column(
+          6, withSpinner(plotOutput("win_method_piechart")),
+          DT::dataTableOutput("how_rounds_end_per_stage")
+        ),
+        column(
+          6,
+          checkboxInput("win_method_sig", label = "Show Significance"),
+          withSpinner(DT::dataTableOutput("win_methods_by_character")),
+          checkboxInput("loss_method_sig", label = "Show Significance"),
+          withSpinner(DT::dataTableOutput("loss_methods_by_character"))
+        )
+      )
+    ),
+    tabPanel(
       uiOutput("VideoSearch"),
       fluidRow(
         column(
-          4,
+          6,
           fluidRow(
             column(
               3,
@@ -166,37 +200,10 @@ ui <- fluidPage(
             )
           ),
           # h2(uiOutput("MatchList")),
-          DT::dataTableOutput("youtube_videos_table")
         ),
-        column(
-          8,
-          fluidRow(
-            withSpinner(plotOutput("timeRemainingDistPlot"))
-          ),
-          fluidRow(
-            column(
-              6, withSpinner(plotOutput("win_method_piechart")),
-              DT::dataTableOutput("how_rounds_end_per_stage")
-            ),
-            column(
-              4,
-              checkboxInput("win_method_sig", label = "Show Significance"),
-              withSpinner(DT::dataTableOutput("win_methods_by_character")),
-              checkboxInput("loss_method_sig", label = "Show Significance"),
-              withSpinner(DT::dataTableOutput("loss_methods_by_character"))
-            )
-          ),
-          fluidRow(
-            column(6, withSpinner(plotOutput("characterDistPlot"))),
-            column(
-              4,
-              withSpinner(DT::dataTableOutput("win_rate_table")),
-              withSpinner(DT::dataTableOutput("character_matchup_table"))
-            )
-          ),
-          fullscreen_those(items = list("characterDistPlot", "rankDistPlot", "stageDistPlot")),
-        )
-      ),
+        column(6, DT::dataTableOutput("youtube_videos_table")),
+        fullscreen_those(items = list("characterDistPlot", "rankDistPlot", "stageDistPlot")),
+      )
     ),
     generate_character_tab("Akira"),
     generate_character_tab("Aoi"),
@@ -218,7 +225,7 @@ ui <- fluidPage(
     generate_character_tab("Vanessa"),
     generate_character_tab("Wolf"),
     tabPanel(
-      "About",
+      "VirtuAnalytics",
       tags$p(
         "VirtuAnalytics v1.2.3"
       ),
