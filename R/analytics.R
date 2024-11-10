@@ -1,31 +1,7 @@
 library(dplyr)
 library(tidyr)
 
-stage_types <- data.frame(
-    Stage = c(
-        "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
-        "Broken House", "Grassland", "Aurora", "Island", "Statues",
-        "Terrace", "Snow Mountain", "Training Room", "Shrine", "Temple",
-        "River", "Sumo Ring", "Genesis", "Great Wall"
-    ),
-    Stage_Type = c(
-        "Rectangle", "Rectangle", "Full Fence", "Full Fence", "Octagon",
-        "Octagon", "Breakable Full Fence", "Breakable Full Fence",
-        "Breakable Half Fence", "Breakable Half Fence", "Half Fence",
-        "Half Fence", "Full Fence and Open", "Full Fence and Open",
-        "Low Fence", "Low Fence", "Open", "Open", "Single Wall",
-        "Single Wall"
-    )
-)
-
-get_stage_type <- function(stage_name, lookup_table) {
-    result <- lookup_table %>%
-        filter(Stage == stage_name) %>%
-        select(Stage.Type) %>%
-        pull() # Extract the value as a vector
-
-    return(result)
-}
+if (!exists("character_matchup_win_table")) source("R/analytics_character_functions.R")
 
 matches_won_per_stage_per_character <- function(data, character_name) {
     stage_type_lookup <- data.frame(
@@ -62,46 +38,6 @@ matches_won_per_stage_per_character <- function(data, character_name) {
         select(Match.ID, Winner_Character, Stage.Type)
 
     return(compare_stage_types_winning_character(match_winners))
-}
-
-rounds_won_per_stage_per_character <- function(data, character_name, stage_name) {
-    stage_type_lookup <- data.frame(
-        Stage = c(
-            "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
-            "Broken House", "Grassland", "Aurora", "Island", "Statues",
-            "Terrace", "Snow Mountain", "Training Room", "Shrine", "Temple",
-            "River", "Sumo Ring", "Genesis", "Great Wall"
-        ),
-        Stage.Type = c(
-            "Rectangle", "Rectangle", "Full Fence", "Full Fence", "Octagon", "Octagon",
-            "Breakable Full Fence", "Breakable Full Fence", "Breakable Half Fence",
-            "Breakable Half Fence", "Half Fence", "Half Fence", "Full Fence and Open",
-            "Full Fence and Open", "Low Fence", "Low Fence", "Open", "Open",
-            "Single Wall", "Single Wall"
-        )
-    )
-
-    # Add Stage Type to data based on the lookup
-    stage_data <- data %>%
-        left_join(stage_type_lookup, by = "Stage") %>%
-        filter(Stage.Type == get_stage_type(stage_name, stage_type_lookup))
-
-    # Filter for matches where Blaze is one of the players, but not both
-    character_wins <- stage_data %>%
-        filter((Player.1.Character == character_name & Player.2.Character != character_name) |
-            (Player.2.Character == character_name & Player.1.Character != character_name))
-
-    round_winners <- character_wins %>%
-        mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
-        mutate(Loser_Character = ifelse(Winning.Player.Number == 2, Player.1.Character, Player.2.Character))
-
-    round_winners <- round_winners %>%
-        mutate(Main_Character_Won = ifelse(Winner_Character == character_name, 1, 0))
-
-    rounds_won_summary <- round_winners %>%
-        pull(Main_Character_Won)
-
-    return(rounds_won_summary)
 }
 
 compare_stage_types <- function(data) {
@@ -198,46 +134,6 @@ compare_stage_match_types <- function(data) {
     # Convert matrix to data frame for easier viewing in a table
     p_value_table <- as.data.frame(p_value_matrix)
     return(p_value_table)
-}
-
-rounds_won_per_other_stages_per_character <- function(data, character_name, stage_name) {
-    stage_type_lookup <- data.frame(
-        Stage = c(
-            "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
-            "Broken House", "Grassland", "Aurora", "Island", "Statues",
-            "Terrace", "Snow Mountain", "Training Room", "Shrine", "Temple",
-            "River", "Sumo Ring", "Genesis", "Great Wall"
-        ),
-        Stage.Type = c(
-            "Rectangle", "Rectangle", "Full Fence", "Full Fence", "Octagon", "Octagon",
-            "Breakable Full Fence", "Breakable Full Fence", "Breakable Half Fence",
-            "Breakable Half Fence", "Half Fence", "Half Fence", "Full Fence and Open",
-            "Full Fence and Open", "Low Fence", "Low Fence", "Open", "Open",
-            "Single Wall", "Single Wall"
-        )
-    )
-
-    # Add Stage Type to data based on the lookup
-    stage_data <- data %>%
-        left_join(stage_type_lookup, by = "Stage") %>%
-        filter(Stage.Type != get_stage_type(stage_name, stage_type_lookup))
-
-    # Filter for matches where Blaze is one of the players, but not both
-    character_wins <- stage_data %>%
-        filter((Player.1.Character == character_name & Player.2.Character != character_name) |
-            (Player.2.Character == character_name & Player.1.Character != character_name))
-
-    round_winners <- character_wins %>%
-        mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
-        mutate(Loser_Character = ifelse(Winning.Player.Number == 2, Player.1.Character, Player.2.Character))
-
-    round_winners <- round_winners %>%
-        mutate(Main_Character_Won = ifelse(Winner_Character == character_name, 1, 0))
-
-    rounds_won_summary <- round_winners %>%
-        pull(Main_Character_Won)
-
-    return(rounds_won_summary)
 }
 
 rounds_won_per_stage_per_character_lookup <- function(data, character_name) {
@@ -595,32 +491,7 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
         ) %>%
         arrange(desc(Win_Percentage)) # Sort by win percentage in descending order
 
-    win_percentage_same_rank_table$p_value <- NA
-    for (winner_character_name in unique(win_percentage_same_rank_table$Character)) {
-        rounds_player1 <- data %>%
-            filter(Player.1.Rank == Player.2.Rank) %>%
-            filter(round_number > 0 & `Player.1.Character` == winner_character_name) %>%
-            mutate(main_won = ifelse(Winning.Player.Number == 1, 1, 0))
-        rounds_player2 <- data %>%
-            filter(Player.1.Rank == Player.2.Rank) %>%
-            filter(round_number > 0 & `Player.2.Character` == winner_character_name) %>%
-            mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
-        rounds_won_specific <- rbind(rounds_player1, rounds_player2)
-
-        other_rounds_player1 <- data %>%
-            filter(Player.1.Rank == Player.2.Rank) %>%
-            filter(round_number > 0 & `Player.1.Character` != winner_character_name) %>%
-            mutate(main_won = ifelse(Winning.Player.Number == 1, 1, 0))
-        other_rounds_player2 <- data %>%
-            filter(Player.1.Rank == Player.2.Rank) %>%
-            filter(round_number > 0 & `Player.2.Character` != winner_character_name) %>%
-            mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
-        rounds_won_other <- rbind(other_rounds_player1, other_rounds_player2)
-
-        t_test_result <- t.test(rounds_won_specific$main_won, rounds_won_other$main_won)
-
-        win_percentage_same_rank_table$p_value[win_percentage_same_rank_table$Character == winner_character_name] <- t_test_result$p.value
-    }
+    win_percentage_same_rank_table <- add_p_value_rounds_won(win_percentage_same_rank_table, data)
 
     saveRDS(win_percentage_same_rank_table, "data/win_percentage_same_rank_table.Rda")
 
