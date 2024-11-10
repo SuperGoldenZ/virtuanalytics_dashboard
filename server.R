@@ -479,16 +479,35 @@ server <- function(input, output, session) {
     })
 
     # Calculate and render overall win rates per character
-    output$win_rate_table <- renderTable(win_percentage_table)
+    observeEvent(input$win_rate_sig, {
+        output$win_rate_table <- DT::renderDataTable({
+            # win_percentage_table <- mutate(win_percentage_table, `Win %` <- Win_Percentage)
+
+            if (input$win_rate_sig == FALSE) {
+                win_percentage_table$p_value <- NULL
+            }
+
+            t <- datatable(win_percentage_table, escape = FALSE, options = list(pageLength = 20, paging = FALSE, lengthChange = FALSE, searching = FALSE)) %>%
+                formatPercentage("Win_Percentage", digits = 0)
+
+            if (input$win_rate_sig) {
+                t <- t %>%
+                    formatRound("p_value", digits = 3) %>%
+                    formatStyle(
+                        "p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    )
+            }
+            return(t)
+        })
+    })
 
     output$character_matchup_table <- renderTable(character_matchup)
+
     output$youtube_videos_table <- DT::renderDataTable({
         datatable(youtube_video_data(), escape = FALSE, options = list(lengthChange = FALSE, searching = FALSE))
     })
 
-    output$win_rate_table <- DT::renderDataTable({
-        datatable(win_percentage_table, options = list(pageLength = 20, paging = FALSE, searching = FALSE, dom = "t")) %>% formatPercentage("Win_Percentage", digits = 0)
-    })
     output$character_matchup_table <- DT::renderDataTable({
         datatable(character_matchup, options = list(paging = FALSE, searching = FALSE)) %>% formatPercentage("Win_Percentage", digits = 0)
     })

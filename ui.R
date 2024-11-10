@@ -110,6 +110,7 @@ ui <- fluidPage(
         ),
         column(
           6,
+          checkboxInput("win_rate_sig", label = "Show Significance"),
           withSpinner(DT::dataTableOutput("win_rate_table")),
           withSpinner(DT::dataTableOutput("character_matchup_table"))
         )
