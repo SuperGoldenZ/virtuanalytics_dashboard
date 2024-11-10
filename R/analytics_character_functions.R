@@ -377,25 +377,25 @@ win_percentages_per_character <- function(data, character_name, win_percentages_
     return(blaze_win_percentage)
 }
 
-add_p_value_rounds_won <- function(df, all_rounds_data) {
+add_p_value_rounds_won <- function(df, all_rounds_data, all_matches) {
     df$p_value <- NA
     for (winner_character_name in unique(df$Character)) {
         rounds_player1 <- all_rounds_data %>%
-            filter(Player.1.Rank == Player.2.Rank) %>%
+            filter(Player.1.Rank == Player.2.Rank | all_matches) %>%
             filter(round_number > 0 & `Player.1.Character` == winner_character_name) %>%
             mutate(main_won = ifelse(Winning.Player.Number == 1, 1, 0))
         rounds_player2 <- all_rounds_data %>%
-            filter(Player.1.Rank == Player.2.Rank) %>%
+            filter(Player.1.Rank == Player.2.Rank | all_matches) %>%
             filter(round_number > 0 & `Player.2.Character` == winner_character_name) %>%
             mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
         rounds_won_specific <- rbind(rounds_player1, rounds_player2)
 
         other_rounds_player1 <- all_rounds_data %>%
-            filter(Player.1.Rank == Player.2.Rank) %>%
+            filter(Player.1.Rank == Player.2.Rank | all_matches) %>%
             filter(round_number > 0 & `Player.1.Character` != winner_character_name) %>%
             mutate(main_won = ifelse(Winning.Player.Number == 1, 1, 0))
         other_rounds_player2 <- all_rounds_data %>%
-            filter(Player.1.Rank == Player.2.Rank) %>%
+            filter(Player.1.Rank == Player.2.Rank | all_matches) %>%
             filter(round_number > 0 & `Player.2.Character` != winner_character_name) %>%
             mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
         rounds_won_other <- rbind(other_rounds_player1, other_rounds_player2)

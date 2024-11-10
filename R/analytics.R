@@ -491,32 +491,11 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
         ) %>%
         arrange(desc(Win_Percentage)) # Sort by win percentage in descending order
 
-    win_percentage_same_rank_table <- add_p_value_rounds_won(win_percentage_same_rank_table, data)
+    win_percentage_same_rank_table <- add_p_value_rounds_won(win_percentage_same_rank_table, data, FALSE)
 
     saveRDS(win_percentage_same_rank_table, "data/win_percentage_same_rank_table.Rda")
 
-    win_percentage_table$p_value <- NA
-    for (winner_character_name in unique(win_percentage_table$Character)) {
-        rounds_player1 <- data %>%
-            filter(round_number > 0 & `Player.1.Character` == winner_character_name) %>%
-            mutate(main_won = ifelse(Winning.Player.Number == 1, 1, 0))
-        rounds_player2 <- data %>%
-            filter(round_number > 0 & `Player.2.Character` == winner_character_name) %>%
-            mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
-        rounds_won_specific <- rbind(rounds_player1, rounds_player2)
-
-        other_rounds_player1 <- data %>%
-            filter(round_number > 0 & `Player.1.Character` != winner_character_name) %>%
-            mutate(main_won = ifelse(Winning.Player.Number == 1, 1, 0))
-        other_rounds_player2 <- data %>%
-            filter(round_number > 0 & `Player.2.Character` != winner_character_name) %>%
-            mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
-        rounds_won_other <- rbind(other_rounds_player1, other_rounds_player2)
-
-        t_test_result <- t.test(rounds_won_specific$main_won, rounds_won_other$main_won)
-
-        win_percentage_table$p_value[win_percentage_table$Character == winner_character_name] <- t_test_result$p.value
-    }
+    win_percentage_table <- add_p_value_rounds_won(win_percentage_table, data, TRUE)
 
     saveRDS(win_percentage_table, "data/win_percentage_table.Rda")
 }
