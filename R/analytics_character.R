@@ -75,6 +75,7 @@ character_matchup_win_table <- function(data, character_name) {
         arrange(desc(Win.Percentage))
 
     character_matchup$p_value <- NA
+
     for (opponent_character_name in unique(character_matchup$Opponent_Character)) {
         rounds_won_specific <- rounds_won_vs_character(data, character_name, opponent_character_name)
 

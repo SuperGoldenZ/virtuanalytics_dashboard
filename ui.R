@@ -106,15 +106,28 @@ ui <- fluidPage(
         column(
           6,
           withSpinner(plotOutput("characterDistPlot")),
-          withSpinner(plotOutput("characterDistPie", width = "600px", height = "600px"))
+        ),
+        column(6, withSpinner(plotOutput("characterDistPie", width = "600px", height = "600px")))
+      ),
+      fluidRow(
+        column(
+          6,
+          fluidRow(
+            column(8, textOutput("all_matchups")),
+            column(3, checkboxInput("win_rate_sig", label = "Show Significance"))
+          ),
+          withSpinner(DT::dataTableOutput("win_rate_table"))
         ),
         column(
           6,
-          checkboxInput("win_rate_sig", label = "Show Significance"),
-          withSpinner(DT::dataTableOutput("win_rate_table")),
-          withSpinner(DT::dataTableOutput("character_matchup_table"))
-        )
+          fluidRow(
+            column(8, textOutput("same_rank_matchups")),
+            column(3, checkboxInput("win_rate_same_sig", label = "Show Significance"))
+          ),
+          withSpinner(DT::dataTableOutput("win_rate_same_rank_table")),
+        ),
       ),
+      withSpinner(DT::dataTableOutput("character_matchup_table"))
     ),
     tabPanel(
       "Ranks",

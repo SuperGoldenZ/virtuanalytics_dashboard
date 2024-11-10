@@ -502,6 +502,29 @@ server <- function(input, output, session) {
         })
     })
 
+    observeEvent(input$win_rate_same_sig, {
+        output$win_rate_same_rank_table <- DT::renderDataTable({
+            # win_percentage_table <- mutate(win_percentage_table, `Win %` <- Win_Percentage)
+
+            if (input$win_rate_same_sig == FALSE) {
+                win_percentage_same_rank_table$p_value <- NULL
+            }
+
+            t <- datatable(win_percentage_same_rank_table, escape = FALSE, options = list(pageLength = 20, paging = FALSE, lengthChange = FALSE, searching = FALSE)) %>%
+                formatPercentage("Win_Percentage", digits = 0)
+
+            if (input$win_rate_same_sig) {
+                t <- t %>%
+                    formatRound("p_value", digits = 3) %>%
+                    formatStyle(
+                        "p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    )
+            }
+            return(t)
+        })
+    })
+
     output$character_matchup_table <- renderTable(character_matchup)
 
     output$youtube_videos_table <- DT::renderDataTable({
@@ -658,4 +681,7 @@ server <- function(input, output, session) {
         lang <- input$language # Get the selected language
         dict$characters[[lang]] # Return character names based on selected language
     })
+
+    output$all_matchups <- renderText("All matchups (players maybe different ranks)")
+    output$same_rank_matchups <- renderText("Players are same rank")
 }

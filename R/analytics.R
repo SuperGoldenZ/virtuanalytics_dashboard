@@ -298,9 +298,11 @@ if (!file.exists(csv_filename)) {
 
 # Read the CSV file
 data <- read.csv(csv_filename)
+#
 
 match_data <- data %>%
-    filter(as.numeric(Player.1.Rank) >= 40 & as.numeric(Player.2.Rank) >= 40 & round_number == 0)
+    filter(as.numeric(Player.1.Rank) >= 40 & as.numeric(Player.2.Rank) >= 40 & round_number == 0 & as.numeric(Player.1.Rank) == as.numeric(Player.2.Rank))
+
 
 ranks <- sort(unique(as.numeric(c(match_data$Player.1.Rank, match_data$Player.2.Rank))))
 characters <- sort(unique(c(match_data$Player.1.Character, match_data$Player.2.Character)))
@@ -437,10 +439,11 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
     data_combined <- readRDS("data/data_combined.Rda")
     match_winners <- readRDS("data/match_winners.Rda")
     total_matches <- readRDS("data/total_matches.Rda")
+    total_matches_same_rank <- readRDS("data/total_matches_same_rank.Rda")
     character_matchup <- readRDS("data/character_matchup.Rda")
     win_counts <- readRDS("data/win_counts.Rda")
     win_percentage_table <- readRDS("data/win_percentage_table.Rda")
-
+    win_percentage_same_rank_table <- readRDS("data/win_percentage_same_rank_table.Rda")
     print("analytics.R - loaded RDAs")
 } else {
     data_combined <- match_data %>%
@@ -459,10 +462,24 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
         mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
         select(Match.ID, Player.1.Character, Player.2.Character, Winner_Character)
 
+
     saveRDS(match_winners, "data/match_winners.Rda")
+
+    match_winners_same_rank <- data %>%
+        filter(Player.1.Rank == Player.2.Rank) %>%
+        group_by(Match.ID) %>%
+        filter(round_number == max(round_number)) %>% # Get the last round of each match
+        mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
+        select(Match.ID, Player.1.Character, Player.2.Character, Winner_Character)
+
+    saveRDS(match_winners_same_rank, "data/match_winners_same_rank.Rda")
 
     # Calculate total number of wins for each character
     win_counts <- match_winners %>%
+        group_by(Winner_Character) %>%
+        summarise(Total_Wins = n(), .groups = "drop")
+
+    win_counts_same_rank <- match_winners_same_rank %>%
         group_by(Winner_Character) %>%
         summarise(Total_Wins = n(), .groups = "drop")
 
@@ -505,6 +522,14 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
         summarise(Total_Matches = n(), .groups = "drop")
 
     saveRDS(total_matches, "data/total_matches.Rda")
+
+    total_matches_same_rank <- match_winners_same_rank %>%
+        select(Match.ID, Player.1.Character, Player.2.Character) %>%
+        pivot_longer(cols = c(Player.1.Character, Player.2.Character), names_to = "Player", values_to = "Character") %>%
+        group_by(Character) %>%
+        summarise(Total_Matches = n(), .groups = "drop")
+
+    saveRDS(total_matches, "data/total_matches_same_rank.Rda")
 
     #################################
     # Filter out matches where both players are the same character
@@ -561,6 +586,43 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
             Win_Percentage = (Total_Wins / Total_Matches)
         ) %>%
         arrange(desc(Win_Percentage)) # Sort by win percentage in descending order
+
+    win_percentage_same_rank_table <- total_matches_same_rank %>%
+        left_join(win_counts_same_rank, by = c("Character" = "Winner_Character")) %>%
+        mutate(
+            Total_Wins = ifelse(is.na(Total_Wins), 0, Total_Wins), # Handle characters with zero wins
+            Win_Percentage = (Total_Wins / Total_Matches)
+        ) %>%
+        arrange(desc(Win_Percentage)) # Sort by win percentage in descending order
+
+    win_percentage_same_rank_table$p_value <- NA
+    for (winner_character_name in unique(win_percentage_same_rank_table$Character)) {
+        rounds_player1 <- data %>%
+            filter(Player.1.Rank == Player.2.Rank) %>%
+            filter(round_number > 0 & `Player.1.Character` == winner_character_name) %>%
+            mutate(main_won = ifelse(Winning.Player.Number == 1, 1, 0))
+        rounds_player2 <- data %>%
+            filter(Player.1.Rank == Player.2.Rank) %>%
+            filter(round_number > 0 & `Player.2.Character` == winner_character_name) %>%
+            mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
+        rounds_won_specific <- rbind(rounds_player1, rounds_player2)
+
+        other_rounds_player1 <- data %>%
+            filter(Player.1.Rank == Player.2.Rank) %>%
+            filter(round_number > 0 & `Player.1.Character` != winner_character_name) %>%
+            mutate(main_won = ifelse(Winning.Player.Number == 1, 1, 0))
+        other_rounds_player2 <- data %>%
+            filter(Player.1.Rank == Player.2.Rank) %>%
+            filter(round_number > 0 & `Player.2.Character` != winner_character_name) %>%
+            mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
+        rounds_won_other <- rbind(other_rounds_player1, other_rounds_player2)
+
+        t_test_result <- t.test(rounds_won_specific$main_won, rounds_won_other$main_won)
+
+        win_percentage_same_rank_table$p_value[win_percentage_same_rank_table$Character == winner_character_name] <- t_test_result$p.value
+    }
+
+    saveRDS(win_percentage_same_rank_table, "data/win_percentage_same_rank_table.Rda")
 
     win_percentage_table$p_value <- NA
     for (winner_character_name in unique(win_percentage_table$Character)) {
