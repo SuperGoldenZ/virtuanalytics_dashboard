@@ -10,6 +10,7 @@ library(shinycssloaders)
 
 if (!exists("win_rate_per_rank")) source("R/analytics.R")
 if (!exists("character_names")) source("R/analytics_character.R")
+if (!exists("character_stage_matchup_win_table")) source("R/analytics_character_functions.R")
 
 generate_character_tab <- function(character) {
   tabPanel(
@@ -126,6 +127,25 @@ ui <- fluidPage(
           ),
           withSpinner(DT::dataTableOutput("win_rate_same_rank_table")),
         ),
+      ),
+      hr(),
+      fluidRow(
+        column(
+          6,
+          fluidRow(
+            column(8, textOutput("all_matchups_rounds")),
+            column(3, checkboxInput("rounds_won_sig", label = "Show Significance")),
+          ),
+          withSpinner(DT::dataTableOutput("rounds_per_match_table")),
+        ),
+        column(
+          6,
+          fluidRow(
+            column(8, textOutput("same_rank_matchups_rounds")),
+            column(3, checkboxInput("rounds_won_same_rank_sig", label = "Show Significance")),
+          ),
+          withSpinner(DT::dataTableOutput("rounds_per_match_same_rank_table")),
+        )
       ),
       withSpinner(DT::dataTableOutput("character_matchup_table"))
     ),

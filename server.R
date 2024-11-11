@@ -9,6 +9,7 @@ library(DT) # Load DT package for interactive tables
 
 if (!exists("ui")) source("ui.R")
 if (!exists("win_rate_per_rank")) source("R/analytics.R")
+if (!exists("character_stage_matchup_win_table")) source("R/analytics_character_functions.R")
 if (!exists("character_names")) source("R/analytics_character.R")
 if (!exists("how_rounds_lost_data")) source("R/analytics_rounds.R")
 
@@ -51,7 +52,7 @@ create_character_tables <- function(output, data, character_name) {
 
     # Wins per Character Table
     output[[paste0(l_character_name, "_wins_per_character_table")]] <- DT::renderDataTable({
-        datatable(character_matchup_win_table(data, character_name), options = list(
+        datatable(character_matchup_win_table(data, character_name, character_matchup_win_table_data), options = list(
             pageLength = 20,
             paging = FALSE,
             searching = FALSE
@@ -65,7 +66,7 @@ create_character_tables <- function(output, data, character_name) {
     })
 
     output[[paste0(l_character_name, "_wins_per_character_and_stage_table")]] <- DT::renderDataTable({
-        datatable(character_stage_matchup_win_table(data, character_name), options = list(
+        datatable(character_stage_matchup_win_table(data, character_name, character_stage_matchup_win_table_lookup), options = list(
             pageLength = 20,
             paging = FALSE,
             searching = FALSE
@@ -80,7 +81,7 @@ create_character_tables <- function(output, data, character_name) {
 
     # Wins per Stage Table
     output[[paste0(l_character_name, "_wins_per_stage_table")]] <- DT::renderDataTable({
-        datatable(win_percentages_per_character(data, character_name), options = list(
+        datatable(win_percentages_per_character(data, character_name, win_percentages_per_character_lookup), options = list(
             pageLength = 20,
             paging = FALSE,
             searching = FALSE
@@ -97,12 +98,8 @@ create_character_tables <- function(output, data, character_name) {
         datatable(matches_list[[character_name]], escape = FALSE, options = list(lengthChange = FALSE, searching = TRUE))
     })
 
-    # output[[paste0(l_character_name, "_win_probability_per_round")]] <- DT::renderDataTable({
-    # win_probability_per_round(data, character_name)
-    # })
-
     output[[paste0(l_character_name, "_win_probability_per_round")]] <- renderPlot({
-        df <- win_probability_per_round(data, character_name) %>%
+        df <- win_probability_per_round(data, character_name, win_probability_per_round_lookup) %>%
             filter(cumulative_wins < 3) %>%
             filter((round_number - cumulative_wins) < 3)
 
@@ -684,4 +681,50 @@ server <- function(input, output, session) {
 
     output$all_matchups <- renderText("All matchups (players maybe different ranks)")
     output$same_rank_matchups <- renderText("Players are same rank")
+
+    output$all_matchups_rounds <- renderText("All matchups (players maybe different ranks)")
+    output$same_rank_matchups_rounds <- renderText("Players are same rank")
+
+
+    observeEvent(input$rounds_won_sig, {
+        if (input$rounds_won_sig == FALSE) {
+            rounds_won_per_character_any_rank$p_value <- NULL
+        }
+
+        output$rounds_per_match_table <- DT::renderDataTable({
+            t <- datatable(rounds_won_per_character_any_rank, options = list(paging = FALSE, searching = FALSE)) %>%
+                formatRound("Rounds_Won_Per_Match", 3)
+
+            if (input$rounds_won_sig) {
+                t <- t %>%
+                    formatRound("p_value", 3) %>%
+                    formatStyle(
+                        "p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    )
+            }
+
+            return(t)
+        })
+    })
+
+    observeEvent(input$rounds_won_same_rank_sig, {
+        if (input$rounds_won_same_rank_sig == FALSE) {
+            rounds_won_per_character_same_rank$p_value <- NULL
+        }
+
+        output$rounds_per_match_same_rank_table <- DT::renderDataTable({
+            t <- datatable(rounds_won_per_character_same_rank, options = list(paging = FALSE, searching = FALSE)) %>%
+                formatRound("Rounds_Won_Per_Match", 3)
+            if (input$rounds_won_same_rank_sig) {
+                t <- t %>%
+                    formatRound("p_value", 3) %>%
+                    formatStyle(
+                        "p_value",
+                        backgroundColor = styleInterval(c(0.05), c("yellow", ""))
+                    )
+            }
+            return(t)
+        })
+    })
 }

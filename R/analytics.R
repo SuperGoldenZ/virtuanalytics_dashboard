@@ -340,6 +340,12 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
     win_counts <- readRDS("data/win_counts.Rda")
     win_percentage_table <- readRDS("data/win_percentage_table.Rda")
     win_percentage_same_rank_table <- readRDS("data/win_percentage_same_rank_table.Rda")
+
+    rounds_won_per_character_any_rank <- readRDS("data/rounds_won_per_character_any_rank.Rda")
+
+    rounds_won_per_character_same_rank <- readRDS("data/rounds_won_per_character_same_rank")
+
+
     print("analytics.R - loaded RDAs")
 } else {
     data_combined <- match_data %>%
@@ -348,6 +354,7 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
         pivot_longer(cols = c(Stage), names_to = "Stage", values_to = "stage") %>%
         select(-Player, -PlayerCharacter, -Stage)
 
+    # cat(names(data_combined),sep="\n")
     saveRDS(data_combined, "data/data_combined.Rda")
 
     ############################ 3
@@ -374,12 +381,11 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
     win_counts <- match_winners %>%
         group_by(Winner_Character) %>%
         summarise(Total_Wins = n(), .groups = "drop")
+    saveRDS(win_counts, "data/win_counts.Rda")
 
     win_counts_same_rank <- match_winners_same_rank %>%
         group_by(Winner_Character) %>%
         summarise(Total_Wins = n(), .groups = "drop")
-
-    saveRDS(win_counts, "data/win_counts.Rda")
 
     win_rate_per_rank_data <- win_rate_per_rank()
     saveRDS(win_rate_per_rank_data, "data/win_rate_per_rank_data.Rda")
@@ -491,13 +497,21 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
         ) %>%
         arrange(desc(Win_Percentage)) # Sort by win percentage in descending order
 
-    win_percentage_same_rank_table <- add_p_value_rounds_won(win_percentage_same_rank_table, data, FALSE)
+    win_percentage_same_rank_table <- add_p_value_matches_won(win_percentage_same_rank_table, data, FALSE)
 
     saveRDS(win_percentage_same_rank_table, "data/win_percentage_same_rank_table.Rda")
 
-    win_percentage_table <- add_p_value_rounds_won(win_percentage_table, data, TRUE)
+    win_percentage_table <- add_p_value_matches_won(win_percentage_table, data, TRUE)
 
     saveRDS(win_percentage_table, "data/win_percentage_table.Rda")
+
+    rounds_won_per_character_any_rank <- rounds_won_per_character(data, TRUE)
+    rounds_won_per_character_any_rank <- add_p_value_rounds_won(rounds_won_per_character_any_rank, data, TRUE)
+    saveRDS(rounds_won_per_character_any_rank, "data/rounds_won_per_character_any_rank.Rda")
+
+    rounds_won_per_character_same_rank <- rounds_won_per_character(data, FALSE)
+    rounds_won_per_character_same_rank <- add_p_value_rounds_won(rounds_won_per_character_same_rank, data, FALSE)
+    saveRDS(rounds_won_per_character_same_rank, "data/rounds_won_per_character_same_rank")
 }
 
 min_point <- min(time_counts$Time.Seconds)

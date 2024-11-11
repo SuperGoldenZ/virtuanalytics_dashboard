@@ -408,6 +408,42 @@ add_p_value_rounds_won <- function(df, all_rounds_data, all_matches) {
     return(df)
 }
 
+add_p_value_matches_won <- function(df, all_rounds_data, all_matches) {
+    df$p_value <- NA
+
+    for (winner_character_name in unique(df$Character)) {
+        rounds_player1 <- all_rounds_data %>%
+            filter(Player.1.Rank == Player.2.Rank | all_matches) %>%
+            group_by("Match.ID") %>%
+            filter(round_number == max(round_number) & `Player.1.Character` == winner_character_name) %>%
+            mutate(main_won = ifelse(Winning.Player.Number == 1, 1, 0))
+        rounds_player2 <- all_rounds_data %>%
+            filter(Player.1.Rank == Player.2.Rank | all_matches) %>%
+            group_by("Match.ID") %>%
+            filter(round_number == max(round_number) & `Player.2.Character` == winner_character_name) %>%
+            mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
+        rounds_won_specific <- rbind(rounds_player1, rounds_player2)
+
+        other_rounds_player1 <- all_rounds_data %>%
+            filter(Player.1.Rank == Player.2.Rank | all_matches) %>%
+            group_by("Match.ID") %>%
+            filter(round_number == max(round_number) & `Player.1.Character` != winner_character_name) %>%
+            mutate(main_won = ifelse(Winning.Player.Number == 1, 1, 0))
+        other_rounds_player2 <- all_rounds_data %>%
+            filter(Player.1.Rank == Player.2.Rank | all_matches) %>%
+            group_by("Match.ID") %>%
+            filter(round_number == max(round_number) & `Player.2.Character` != winner_character_name) %>%
+            mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
+        rounds_won_other <- rbind(other_rounds_player1, other_rounds_player2)
+
+        t_test_result <- t.test(rounds_won_specific$main_won, rounds_won_other$main_won)
+
+        df$p_value[df$Character == winner_character_name] <- t_test_result$p.value
+    }
+
+    return(df)
+}
+
 rounds_won_per_stage_per_character <- function(data, character_name, stage_name) {
     stage_type_lookup <- data.frame(
         Stage = c(
@@ -486,4 +522,32 @@ rounds_won_per_other_stages_per_character <- function(data, character_name, stag
         pull(Main_Character_Won)
 
     return(rounds_won_summary)
+}
+
+rounds_won_per_character <- function(data, any_rank) {
+    columns <- c("Character", "Total_Matches", "Rounds_Won", "Rounds_Won_Per_Match")
+
+    result <- data.frame(matrix(ncol = 4, nrow = 0))
+    colnames(result) <- columns
+
+    for (player1_character_name in unique(data$Player.1.Character)) {
+        rounds_won_per_match_counts <- data %>%
+            filter(round_number > 0 & Player.1.Character != Player.2.Character) %>%
+            filter(any_rank | Player.1.Rank == Player.2.Rank) %>%
+            mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
+            mutate(Winner_Character_Round_Won = ifelse(Winning.Player.Number == 1, 1, 0)) %>%
+            mutate(Losing_Character = ifelse(Winning.Player.Number != 1, Player.1.Character, Player.2.Character)) %>%
+            mutate(Losing_Character_Round_Won = ifelse(Winning.Player.Number != 1, 1, 0))
+
+        match_count <- nrow(rounds_won_per_match_counts %>% filter(Losing_Character == player1_character_name | Winner_Character == player1_character_name) %>% filter(round_number == 1))
+
+        rounds_won_count <- nrow(rounds_won_per_match_counts %>% filter(Winner_Character == player1_character_name))
+
+        rounds_per_match <- (rounds_won_count) / (match_count)
+        row <- c(player1_character_name, match_count, rounds_won_count, rounds_per_match)
+
+        result[nrow(result) + 1, ] <- row
+    }
+    result <- result %>% arrange(desc(Rounds_Won_Per_Match)) # Sort by win percentage in descending order
+    return(result)
 }
