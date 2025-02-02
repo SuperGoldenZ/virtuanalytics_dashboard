@@ -2,14 +2,23 @@ library(dplyr)
 
 if (!exists("stage_type_lookup")) source("R/analytics_stage.R")
 
-character_matchup_win_table <- function(data, character_name, character_matchup_win_table_data, rounds_won_vs_other_characters_lookup) {
+character_matchup_win_table <- function(data, character_name, character_matchup_win_table_data, rounds_won_vs_other_characters_lookup, all_ranks, character_matchup_win_table_data_same_rank) {
     if (character_name %in% names(character_matchup_win_table_data)) {
-        return(character_matchup_win_table_data[[character_name]])
+        if (all_ranks == TRUE) {
+            return(character_matchup_win_table_data[[character_name]])
+        }
+    }
+
+    if (character_name %in% names(character_matchup_win_table_data_same_rank)) {
+        if (all_ranks == FALSE) {
+            return(character_matchup_win_table_data_same_rank[[character_name]])
+        }
     }
 
     # Filter out matches where both players are the same character
     matchup_data <- data %>%
         filter(Player.1.Character != Player.2.Character) %>%
+        filter(Player.1.Rank == Player.2.Rank | all_ranks) %>%
         filter(Player.1.Character == character_name | Player.2.Character == character_name) %>%
         group_by(Match.ID) %>%
         filter(round_number == max(round_number))
@@ -53,12 +62,15 @@ character_matchup_win_table <- function(data, character_name, character_matchup_
     character_matchup$p_value <- NA
 
     for (opponent_character_name in unique(character_matchup$Opponent_Character)) {
-        rounds_won_specific <- rounds_won_vs_character(data, character_name, opponent_character_name)
+        rounds_won_specific <- rounds_won_vs_character(data, character_name, opponent_character_name, all_ranks)
 
-        rounds_won_other <- rounds_won_vs_other_characters(data, character_name, opponent_character_name, rounds_won_vs_other_characters_lookup)
-        t_test_result <- t.test(rounds_won_specific, rounds_won_other)
-
-        character_matchup$p_value[character_matchup$Opponent_Character == opponent_character_name] <- t_test_result$p.value
+        rounds_won_other <- rounds_won_vs_other_characters(data, character_name, opponent_character_name, rounds_won_vs_other_characters_lookup, all_ranks)
+        tryCatch({
+            t_test_result <- t.test(rounds_won_specific, rounds_won_other)
+            character_matchup$p_value[character_matchup$Opponent_Character == opponent_character_name] <- t_test_result$p.value
+        }, error = function(e) {
+            character_matchup$p_value[character_matchup$Opponent_Character == opponent_character_name] <- NA
+        })
     }
 
     # rename(!!get_new_name() := Win)
@@ -75,11 +87,12 @@ character_matchup_win_table <- function(data, character_name, character_matchup_
     return(character_matchup)
 }
 
-rounds_won_vs_character <- function(data, character_name, opponent_character_name) {
+rounds_won_vs_character <- function(data, character_name, opponent_character_name, all_ranks = TRUE) {
     # Filter for matches where Blaze is one of the players, but not both
     character_wins <- data %>%
         filter((Player.1.Character == character_name & Player.2.Character == opponent_character_name) |
-            (Player.2.Character == character_name & Player.1.Character == opponent_character_name))
+            (Player.2.Character == character_name & Player.1.Character == opponent_character_name)) %>%
+        filter(Player.1.Rank == Player.2.Rank | all_ranks)
 
     round_winners <- character_wins %>%
         mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
@@ -94,7 +107,7 @@ rounds_won_vs_character <- function(data, character_name, opponent_character_nam
     return(rounds_won_summary)
 }
 
-rounds_won_vs_other_characters <- function(data, character_name, opponent_character_name, rounds_won_vs_other_characters_lookup) {
+rounds_won_vs_other_characters <- function(data, character_name, opponent_character_name, rounds_won_vs_other_characters_lookup, all_ranks = TRUE) {
     if (character_name %in% names(rounds_won_vs_other_characters_lookup)) {
         if (opponent_character_name %in% names(rounds_won_vs_other_characters_lookup[[character_name]])) {
             return(rounds_won_vs_other_characters_lookup[[character_name]][[opponent_character_name]])
@@ -105,7 +118,8 @@ rounds_won_vs_other_characters <- function(data, character_name, opponent_charac
     character_wins <- data %>%
         filter(Player.1.Character != Player.2.Character) %>%
         filter((Player.1.Character == character_name & Player.2.Character != opponent_character_name) |
-            (Player.2.Character == character_name & Player.1.Character != opponent_character_name))
+            (Player.2.Character == character_name & Player.1.Character != opponent_character_name)) %>%
+        filter(Player.1.Rank == Player.2.Rank | all_ranks)
 
     round_winners <- character_wins %>%
         mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
@@ -365,9 +379,12 @@ win_percentages_per_character <- function(data, character_name, win_percentages_
         rounds_won_specific <- rounds_won_per_stage_per_character(data, character_name, stage)
         rounds_won_other <- rounds_won_per_other_stages_per_character(data, character_name, stage)
 
-        t_test_result <- t.test(rounds_won_specific, rounds_won_other)
-
-        blaze_win_percentage$p_value[blaze_win_percentage$Stage.Category == get_stage_type(stage, stage_type_lookup)] <- t_test_result$p.value
+        tryCatch({
+            t_test_result <- t.test(rounds_won_specific, rounds_won_other)
+            blaze_win_percentage$p_value[blaze_win_percentage$Stage.Category == get_stage_type(stage, stage_type_lookup)] <- t_test_result$p.value
+        }, error = function(e) {
+            blaze_win_percentage$p_value[blaze_win_percentage$Stage.Category == get_stage_type(stage, stage_type_lookup)] <- NA
+        })
     }
 
     blaze_win_percentage <- blaze_win_percentage %>%
@@ -400,9 +417,15 @@ add_p_value_rounds_won <- function(df, all_rounds_data, all_matches) {
             mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
         rounds_won_other <- rbind(other_rounds_player1, other_rounds_player2)
 
-        t_test_result <- t.test(rounds_won_specific$main_won, rounds_won_other$main_won)
-
-        df$p_value[df$Character == winner_character_name] <- t_test_result$p.value
+        tryCatch(
+            {
+                t_test_result <- t.test(rounds_won_specific$main_won, rounds_won_other$main_won)
+                df$p_value[df$Character == winner_character_name] <- t_test_result$p.value
+            },
+            error = function(e) {
+                df$p_value[df$Character == winner_character_name] <- NA
+            }
+        )
     }
 
     return(df)
@@ -436,9 +459,15 @@ add_p_value_matches_won <- function(df, all_rounds_data, all_matches) {
             mutate(main_won = ifelse(`Winning.Player.Number` == 1, 0, 1))
         rounds_won_other <- rbind(other_rounds_player1, other_rounds_player2)
 
-        t_test_result <- t.test(rounds_won_specific$main_won, rounds_won_other$main_won)
-
-        df$p_value[df$Character == winner_character_name] <- t_test_result$p.value
+        tryCatch(
+            {
+                t_test_result <- t.test(rounds_won_specific$main_won, rounds_won_other$main_won)
+                df$p_value[df$Character == winner_character_name] <- t_test_result$p.value
+            },
+            error = function(e) {
+                df$p_value[df$Character == winner_character_name] <- NA
+            }
+        )
     }
 
     return(df)
@@ -550,4 +579,13 @@ rounds_won_per_character <- function(data, any_rank) {
     }
     result <- result %>% arrange(desc(Rounds_Won_Per_Match)) # Sort by win percentage in descending order
     return(result)
+}
+
+matches_won_per_matchup <- function(data, main_character, vs_character) {
+    print(head(data), 5)
+    #             `Total\nMatches` = `Total.Matches`,
+    #           `Wins By\nMain Character` = `Wins_By_Main_Character`
+
+    num_won <- data[data$`Main\nCharacter` == main_character & data$`vs\nCharacter` == vs_character, data$`Wins By\nMain Character`]
+    return(num_won)
 }
