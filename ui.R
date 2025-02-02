@@ -7,6 +7,7 @@ library(scales)
 library(shinyfullscreen)
 library(DT) # Load DT package for interactive tables
 library(shinycssloaders)
+library(lubridate)
 
 if (!exists("win_rate_per_rank")) source("R/analytics.R")
 if (!exists("character_names")) source("R/analytics_character.R")
@@ -16,9 +17,20 @@ generate_character_tab <- function(character) {
   tabPanel(
     uiOutput(paste0(character, "Button")),
     fluidRow(
-      img(src = paste("images/", character, ".webp", sep = ""), width = "20%", class = "character-image"),
       column(
-        4,
+        6,
+        h2("Any Rank"),
+        DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_table"))
+      ),
+      column(
+        6,
+        h2("Same Rank"),
+        DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_table_same_rank"))
+      ),
+    ),
+    fluidRow(
+      column(
+        6,
         fluidRow(
           tags$p(paste(count_character_matches(data, character), " total matches"))
         ),
@@ -28,11 +40,11 @@ generate_character_tab <- function(character) {
         # DT::dataTableOutput(paste0(tolower(character), "_wins_per_stage_lookup_table"))
       ),
       column(
-        4,
-        DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_table")),
+        6,
         withSpinner(plotOutput(paste0(tolower(character), "_win_probability_per_round"))),
         DT::dataTableOutput(paste0(tolower(character), "_wins_per_character_and_stage_table")),
-      )
+      ) # ,
+      # img(src = paste("images/", character, ".webp", sep = ""), width = "20%", class = "character-image"),
     )
   )
 }
@@ -40,7 +52,7 @@ generate_character_tab <- function(character) {
 # Define UI
 ui <- fluidPage(
   tags$head(
-    tags$title("VirtuAnalytics"),
+    tags$title("VirtuAnalytics - R.E.V.O."),
     tags$style(HTML("
       @import url('https://fonts.googleapis.com/css2?family=Brush+Script+MT&display=swap');
 
@@ -77,14 +89,31 @@ ui <- fluidPage(
 
     .character-image {
         position: sticky;
+        right: 0;
         top: 100px; /* Adjust this value to control the vertical offset */
         z-index: 1001;
+        margin-left: 80px;
       }
 
       .parent-container {
         overflow: visible;
         min-height: 100%; /* or any height that ensures scroll space */
         }
+
+        .custom-dt-table .dataTables_wrapper {
+        margin-top: 2px; /* Adjusts the top margin */
+        margin-bottom: 2px; /* Adjusts the bottom margin */
+      }
+
+      table.dataTable tbody td {
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+      }
+
+      .sorting {
+        font-size: 22px !important;
+      }
+
     "))
   ),
   navbarPage(
@@ -103,6 +132,24 @@ ui <- fluidPage(
     ),
     tabPanel(
       "Characters",
+      #      fluidRow(
+      #          plotOutput("shun_win_line_chart")
+      #      ),
+      #      fluidRow(
+      #          plotOutput("shun_drinks_per_round")
+      #      ),
+      #      fluidRow(
+      #          plotOutput("shun_distribution_round2")
+      #      ),
+      #      fluidRow(
+      #          plotOutput("shun_distribution_round3")
+      #      ),
+      #      fluidRow(
+      #          plotOutput("shun_distribution_round4")
+      #      ),
+      #      fluidRow(
+      #          plotOutput("shun_distribution_round5")
+      #      ),
       fluidRow(
         column(
           6,
@@ -154,7 +201,8 @@ ui <- fluidPage(
       fluidRow(
         column(
           6,
-          withSpinner(plotOutput("rankDistPlotStatic"))
+          withSpinner(plotOutput("rankDistPlotStatic")),
+          DT::dataTableOutput("matches_per_player")
         ),
         column(
           6,
@@ -195,50 +243,71 @@ ui <- fluidPage(
         )
       )
     ),
-    tabPanel(
-      uiOutput("VideoSearch"),
-      fluidRow(
-        column(
-          6,
-          fluidRow(
-            column(
-              3,
-              fluidRow(
-                actionButton("select_all_stages", uiOutput("SelectAllStages"), style = "padding:4px; font-size:80%"),
-                actionButton("clear_all_stages", uiOutput("ClearAllStages"), style = "padding:4px; font-size:80%")
-              ),
-              checkboxGroupInput("stages", uiOutput("Stages"),
-                choices = stages,
-                selected = stages
-              ) %>% div(class = "scroll-checkbox-group")
-            ),
-            column(
-              3,
-              fluidRow(
-                actionButton("select_all_ranks", uiOutput("SelectAllRanks"), style = "padding:4px; font-size:80%"),
-                actionButton("clear_all_ranks", uiOutput("ClearAllRanks"), style = "padding:4px; font-size:80%"),
-              ),
-              checkboxGroupInput("ranks", uiOutput("Ranks"),
-                choices = ranks,
-                selected = ranks
-              ),
-            ),
-            column(
-              3,
-              # Select All / Clear All buttons for characters
-              # actionButton("select_all_characters", uiOutput("SelectAllCharacters")),
-              actionButton("clear_all_characters", uiOutput("ClearAllCharacters"), style = "padding:4px; font-size:80%"),
-              checkboxGroupInput("characters", uiOutput("Characters"),
-                choices = characters
-              ) %>% div(class = "scroll-checkbox-group")
-            )
-          ),
-          # h2(uiOutput("MatchList")),
-        ),
-        column(6, DT::dataTableOutput("youtube_videos_table")),
-        fullscreen_those(items = list("characterDistPlot", "rankDistPlot", "stageDistPlot")),
-      )
-    ),
+    #    tabPanel(
+    #      uiOutput("VideoSearch"),
+    #      fluidRow(
+    #        column(
+    #          10,
+    #          fluidRow(
+    #            column(
+    #              2,
+    #              fluidRow(
+    #                actionButton("select_all_stages", uiOutput("SelectAllStages"), style = "padding:4px; font-size:80%"),
+    #                actionButton("clear_all_stages", uiOutput("ClearAllStages"), style = "padding:4px; font-size:80%")
+    #              ),
+    #              checkboxGroupInput("stages", uiOutput("Stages"),
+    #                choices = stages,
+    #                selected = stages
+    #              ) %>% div(class = "scroll-checkbox-group")
+    #            ),
+    #            column(
+    #              1,
+    #              fluidRow(
+    #                actionButton("select_all_ranks", uiOutput("SelectAllRanks"), style = "padding:4px; font-size:80%"),
+    #                actionButton("clear_all_ranks", uiOutput("ClearAllRanks"), style = "padding:4px; font-size:80%"),
+    #              ),
+    #              checkboxGroupInput("ranks", uiOutput("Ranks"),
+    #                choices = ranks,
+    #                selected = ranks
+    #              ),
+    #            ),
+    #            column(
+    #              1,
+    #              # Select All / Clear All buttons for characters
+    #              # actionButton("select_all_characters", uiOutput("SelectAllCharacters")),
+    #              actionButton("clear_all_characters", uiOutput("ClearAllCharacters"), style = "padding:4px; font-size:80%"),
+    #              checkboxGroupInput("characters", uiOutput("Characters"),
+    #                choices = characters
+    #              ) %>% div(class = "scroll-checkbox-group"),
+    #            ),
+    #            column(8,
+    #              textOutput("unique_players"),
+    #              fluidRow(
+    #                column(3,
+    #                  plotOutput("matches_per_year_bar_chart")),
+    #
+    #                column(3,
+    #                  plotOutput("unique_players_bar_chart")),
+    #                column(3,
+    #                  plotOutput("unique_players_per_character_chart"),
+    #                ),
+    #                column(3,
+    #                  plotOutput("unique_players_per_rank_chart"),
+    #                ),
+    #              ),
+    #            ),
+    #          ),
+    #          hr(),
+    #          column(
+    #            10,
+    #            DT::dataTableOutput("youtube_videos_table")
+    #          ),
+
+    # h2(uiOutput("MatchList")),
+    #        ),
+    #        fullscreen_those(items = list("characterDistPlot", "rankDistPlot", "stageDistPlot")),
+    #      )
+    #    ),
     generate_character_tab("Akira"),
     generate_character_tab("Aoi"),
     generate_character_tab("Brad"),
