@@ -3,6 +3,39 @@ library(tidyr)
 
 if (!exists("character_matchup_win_table")) source("R/analytics_character_functions.R")
 
+number_unique_players <- function(matches) {
+    # Combine the two columns into a single vector
+    all_players <- c(matches$Player.1.Ringname, matches$Player.2.Ringname)
+
+    # Find the unique values
+    unique_players <- unique(all_players)
+
+    # Get the total count of unique players
+    total_unique_players <- length(unique_players)
+
+    # Print the result
+    total_unique_players
+}
+
+number_unique_players_per_character <- function(matches) {
+    combined <- matches %>%
+        select(Player.1.Ringname, Player.1.Character) %>%
+        rename(ringname = Player.1.Ringname, character = Player.1.Character) %>%
+        bind_rows(
+            matches %>%
+                select(Player.2.Ringname, Player.2.Character) %>%
+                rename(ringname = Player.2.Ringname, character = Player.2.Character)
+        )
+
+    # Group by character and count unique players
+    unique_per_character <- combined %>%
+        group_by(character) %>%
+        summarise(total_unique_players = n_distinct(ringname), .groups = "drop")
+
+    # Print the result
+    unique_per_character
+}
+
 matches_won_per_stage_per_character <- function(data, character_name) {
     stage_type_lookup <- data.frame(
         Stage = c(
@@ -194,10 +227,20 @@ if (!file.exists(csv_filename)) {
 
 # Read the CSV file
 data <- read.csv(csv_filename)
-#
-
 match_data <- data %>%
-    filter(as.numeric(Player.1.Rank) >= 40 & as.numeric(Player.2.Rank) >= 40 & round_number == 0 & as.numeric(Player.1.Rank) == as.numeric(Player.2.Rank))
+    filter(round_number == 0)
+print("Num matches: ")
+print(nrow(match_data))
+
+matches <- read.csv("matches_sorted.csv")
+print(paste(number_unique_players(matches), " unique players"))
+print(paste(number_unique_players_per_character(matches), " unique players per character"))
+
+
+matches$Video.URL <- paste0("<a href='", matches$Video.URL, "' target='_blank'>Open</a>")
+
+# match_data <- data %>%
+# filter(as.numeric(Player.1.Rank) >= 40 & as.numeric(Player.2.Rank) >= 40 & round_number == 0)
 
 
 ranks <- sort(unique(as.numeric(c(match_data$Player.1.Rank, match_data$Player.2.Rank))))
@@ -301,7 +344,7 @@ win_rate_per_rank <- function() {
     match_winners <- data %>%
         group_by(Match.ID) %>%
         filter(round_number == max(round_number)) %>% # Get the last round of each match
-        filter(Player.1.Rank >= 40 & Player.2.Rank >= 40) %>%
+        filter(Player.1.Rank <= 46 & Player.2.Rank <= 46) %>%
         mutate(
             Winner_Rank = ifelse(Winning.Player.Number == 1, Player.1.Rank, Player.2.Rank),
             Loser_Rank = ifelse(Winning.Player.Number == 1, Player.2.Rank, Player.1.Rank)
@@ -309,7 +352,7 @@ win_rate_per_rank <- function() {
         select(Match.ID, Winner_Rank, Loser_Rank)
 
     win_percentage_lookup <- match_winners %>%
-        filter(Winner_Rank > 39) %>%
+        filter(Winner_Rank <= 46) %>%
         group_by(Winner_Rank, Loser_Rank) %>%
         summarise(
             wins = n(), # Count the number of wins
@@ -404,6 +447,7 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
     saveRDS(youtube_video_data_all, "data/youtube_video_data_all.Rda")
 
     rank_counts_static <- data_combined %>%
+        filter(player_rank <= 46) %>%
         select(player_rank) %>%
         pivot_longer(cols = everything(), names_to = "Player", values_to = "Rank") %>%
         count(Rank)
@@ -514,8 +558,98 @@ if (file.exists("data/win_rate_per_rank_data.Rda")) {
     saveRDS(rounds_won_per_character_same_rank, "data/rounds_won_per_character_same_rank")
 }
 
+
 min_point <- min(time_counts$Time.Seconds)
 max_point <- max(time_counts$Time.Seconds)
 
 time_counts <- time_counts %>%
     count(Time.Seconds)
+
+
+# shun_matches <- read.csv("shun_matches.csv")
+shun_matches <- read.csv("beta_match_data_20241228.csv")
+
+shun_table_data <- shun_matches %>%
+    filter(`Player.1.Character` == "Shun" | `Player.2.Character` == "Shun") %>%
+    mutate(
+        `Shun.Drinks.1P` = ifelse(`Player.1.Character` == "Shun", as.numeric(`Shun.Drinks.1P`), NA),
+        `Shun.Drinks.2P` = ifelse(`Player.2.Character` == "Shun", as.numeric(`Shun.Drinks.2P`), NA),
+        Winning_Player_Is_Shun = case_when(
+            `Winning.Player.Number` == 1 & `Player.1.Character` == "Shun" ~ TRUE,
+            `Winning.Player.Number` == 2 & `Player.2.Character` == "Shun" ~ TRUE,
+            TRUE ~ FALSE
+        )
+    ) %>%
+    pivot_longer(
+        cols = c(`Shun.Drinks.1P`, `Shun.Drinks.2P`),
+        names_to = "Player",
+        values_to = "Drinks"
+    ) %>%
+    filter(!is.na(Drinks)) %>%
+    group_by(Drinks) %>%
+    summarize(
+        Total_Rounds = n(),
+        Rounds_Won = sum(Winning_Player_Is_Shun, na.rm = TRUE),
+        Win_Percentage = round((Rounds_Won / Total_Rounds) * 100, 2),
+        .groups = "drop"
+    )
+
+shun_line_data <- shun_matches %>%
+    filter(`Player.1.Character` == "Shun" | `Player.2.Character` == "Shun") %>%
+    # filter(Player.1.Rank == Player.2.Rank) %>%
+    mutate(
+        `Shun.Drinks.1P` = ifelse(`Player.1.Character` == "Shun", as.numeric(`Shun.Drinks.1P`), NA),
+        `Shun.Drinks.2P` = ifelse(`Player.2.Character` == "Shun", as.numeric(`Shun.Drinks.2P`), NA),
+        Winning_Player_Is_Shun = case_when(
+            `Winning.Player.Number` == 1 & `Player.1.Character` == "Shun" ~ TRUE,
+            `Winning.Player.Number` == 2 & `Player.2.Character` == "Shun" ~ TRUE,
+            TRUE ~ FALSE
+        )
+    ) %>%
+    pivot_longer(
+        cols = c(`Shun.Drinks.1P`, `Shun.Drinks.2P`),
+        names_to = "Player",
+        values_to = "Drinks"
+    ) %>%
+    filter(!is.na(Drinks)) %>%
+    group_by(Drinks) %>%
+    summarize(
+        Total_Rounds = n(),
+        Rounds_Won = sum(Winning_Player_Is_Shun, na.rm = TRUE),
+        Win_Percentage = round((Rounds_Won / Total_Rounds) * 100, 2),
+        .groups = "drop"
+    ) %>%
+    filter(Total_Rounds >= 10)
+
+
+unique_players_count <- function(df) {
+    all_ringnames <- c(df$Player.1.Ringname, df$Player.2.Ringname)
+
+    # Get the unique values
+    unique_ringnames <- unique(all_ringnames)
+
+    # Count the number of unique ringnames
+    length(unique_ringnames)
+}
+
+matches_per_player <- function(df) {
+    print(colnames(df))
+    # Filter rows where Round.Number = 0
+    matches_df <- df %>% filter(round_number == 0)
+
+    # Combine both Player.1.Ringname and Player.2.Ringname into one column
+    all_players <- c(matches_df$Player.1.Ringname, matches_df$Player.2.Ringname)
+
+    # Create a data table with counts of matches for each player
+    player_match_count <- data.frame(
+        Player_Ringname = all_players
+    ) %>%
+        group_by(Player_Ringname) %>%
+        summarise(Total_Matches = n(), .groups = "drop") %>%
+        arrange(desc(Total_Matches))
+}
+
+print(shun_table_data, n = Inf)
+
+# print("Unique players:")
+# print(unique_players(data))
