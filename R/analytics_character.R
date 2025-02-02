@@ -26,6 +26,7 @@ character_names <- list(
 )
 
 character_matchup_win_table_data <- list()
+character_matchup_win_table_data_same_rank <- list()
 rounds_won_vs_character_lookup <- list()
 rounds_won_vs_other_characters_lookup <- list()
 character_stage_matchup_win_table_lookup <- list()
@@ -37,6 +38,7 @@ if (file.exists("data/rounds_won_vs_other_characters_lookup.Rda")) {
     rounds_won_vs_other_characters_lookup <- readRDS("data/rounds_won_vs_other_characters_lookup.Rda")
     win_probability_per_round_lookup <- readRDS("data/win_probability_per_round_lookup.Rda")
     character_matchup_win_table_data <- readRDS("data/character_matchup_win_table_data.Rda")
+    character_matchup_win_table_data_same_rank <- readRDS("data/character_matchup_win_table_data_same_rank.Rda")
     character_stage_matchup_win_table_lookup <- readRDS("data/character_stage_matchup_win_table_lookup.Rda")
     win_percentages_per_character_lookup <- readRDS("data/win_percentages_per_character_lookup.Rda")
     matches_list <- readRDS("data/matches_list.Rda")
@@ -71,13 +73,14 @@ if (file.exists("data/rounds_won_vs_other_characters_lookup.Rda")) {
         win_probability_per_round_lookup[[chr]] <<- win_probability_per_round(data, chr, win_probability_per_round_lookup)
 
         print("a")
-        character_matchup_win_table_data[[chr]] <<- character_matchup_win_table(data, chr, character_matchup_win_table_data, rounds_won_vs_other_characters_lookup)
+        character_matchup_win_table_data[[chr]] <<-     character_matchup_win_table(data, chr, character_matchup_win_table_data, rounds_won_vs_other_characters_lookup, TRUE, character_matchup_win_table_data_same_rank)
+        character_matchup_win_table_data_same_rank[[chr]] <<- character_matchup_win_table(data, chr, character_matchup_win_table_data, rounds_won_vs_other_characters_lookup, FALSE, character_matchup_win_table_data_same_rank)
         print("b")
         character_stage_matchup_win_table_lookup[[chr]] <<- character_stage_matchup_win_table(data, chr, character_stage_matchup_win_table_lookup)
         print("c")
         win_percentages_per_character_lookup[[chr]] <<- win_percentages_per_character(data, chr, win_percentages_per_character_lookup)
         print("d")
-
+1
         matches_list[[chr]] <<- match_data %>%
             filter(Player.1.Character == chr | Player.2.Character == chr) %>%
             mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
@@ -88,6 +91,7 @@ if (file.exists("data/rounds_won_vs_other_characters_lookup.Rda")) {
     saveRDS(rounds_won_vs_other_characters_lookup, "data/rounds_won_vs_other_characters_lookup.Rda")
     saveRDS(win_probability_per_round_lookup, "data/win_probability_per_round_lookup.Rda")
     saveRDS(character_matchup_win_table_data, "data/character_matchup_win_table_data.Rda")
+    saveRDS(character_matchup_win_table_data_same_rank, "data/character_matchup_win_table_data_same_rank.Rda")
     saveRDS(character_stage_matchup_win_table_lookup, "data/character_stage_matchup_win_table_lookup.Rda")
     saveRDS(win_percentages_per_character_lookup, "data/win_percentages_per_character_lookup.Rda")
     saveRDS(matches_list, "data/matches_list.Rda")
