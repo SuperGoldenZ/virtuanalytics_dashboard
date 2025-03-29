@@ -45,16 +45,18 @@ how_rounds_lost_data <- function(data) {
         pivot_wider(names_from = How.Round.Ended, values_from = count, values_fill = 0) %>%
         rowwise() %>%
         mutate(
-            Total = sum(c_across(c(KO, RO, EX))),
+            Total = sum(c_across(c(KO, RO, EX, TO))),
             KO = round((KO / Total), 5),
             RO = round((RO / Total), 5),
-            EX = round((EX / Total), 5)
+            EX = round((EX / Total), 5),
+            TO = round((TO / Total), 5)
         )
 
     rounds <- rounds %>%
         mutate(is_ko = ifelse(How.Round.Ended == "KO", 1, 0)) %>%
         mutate(is_ro = ifelse(How.Round.Ended == "RO", 1, 0)) %>%
-        mutate(is_ex = ifelse(How.Round.Ended == "EX", 1, 0))
+        mutate(is_ex = ifelse(How.Round.Ended == "EX", 1, 0)) #%>%
+        #mutate(is_to = ifelse(How.Round.Ended == "TO", 1, 0))
 
     rounds_summary$ko_p_value <- NA
     rounds_summary$ro_p_value <- NA
@@ -109,10 +111,11 @@ how_rounds_won_data <- function(data) {
         pivot_wider(names_from = How.Round.Ended, values_from = count, values_fill = 0) %>%
         rowwise() %>%
         mutate(
-            Total = sum(c_across(c(KO, RO, EX))),
+            Total = sum(c_across(c(KO, RO, EX, TO))),
             KO = round((KO / Total), 5),
             RO = round((RO / Total), 5),
-            EX = round((EX / Total), 5)
+            EX = round((EX / Total), 5),
+            TO = round((TO / Total), 5)
         )
 
     rounds <- rounds %>%
@@ -170,10 +173,11 @@ how_rounds_end_per_stage <- function(data) {
         pivot_wider(names_from = How.Round.Ended, values_from = count, values_fill = 0) %>%
         rowwise() %>%
         mutate(
-            Total = sum(c_across(c(KO, RO, EX))),
+            Total = sum(c_across(c(KO, RO, EX, TO))),
             KO = round((KO / Total), 5),
             RO = round((RO / Total), 5),
-            EX = round((EX / Total), 5)
+            EX = round((EX / Total), 5),
+            TO = round((TO / Total), 5)
         )
 
     return(rounds)

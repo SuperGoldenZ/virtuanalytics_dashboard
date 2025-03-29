@@ -1,30 +1,39 @@
 library(dplyr)
 library(tidyr)
 
-stage_types <- data.frame(
-    Stage = c(
-        "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
-        "Broken House", "Grassland", "Aurora", "Island", "Statues",
-        "Terrace", "Snow Mountain", "Training Room", "Shrine", "Temple",
-        "River", "Sumo Ring", "Genesis", "Great Wall"
-    ),
-    Stage_Type = c(
-        "Rectangle", "Rectangle", "Full Fence", "Full Fence", "Octagon",
-        "Octagon", "Breakable Full Fence", "Breakable Full Fence",
-        "Breakable Half Fence", "Breakable Half Fence", "Half Fence",
-        "Half Fence", "Full Fence and Open", "Full Fence and Open",
-        "Low Fence", "Low Fence", "Open", "Open", "Single Wall",
-        "Single Wall"
-    )
-)
+if (!exists("character_matchup_win_table")) source("R/analytics_character_functions.R")
 
-get_stage_type <- function(stage_name, lookup_table) {
-    result <- lookup_table %>%
-        filter(Stage == stage_name) %>%
-        select(Stage.Type) %>%
-        pull() # Extract the value as a vector
+number_unique_players <- function(matches) {
+    # Combine the two columns into a single vector
+    all_players <- c(matches$Player.1.Ringname, matches$Player.2.Ringname)
 
-    return(result)
+    # Find the unique values
+    unique_players <- unique(all_players)
+
+    # Get the total count of unique players
+    total_unique_players <- length(unique_players)
+
+    # Print the result
+    total_unique_players
+}
+
+number_unique_players_per_character <- function(matches) {
+    combined <- matches %>%
+        select(Player.1.Ringname, Player.1.Character) %>%
+        rename(ringname = Player.1.Ringname, character = Player.1.Character) %>%
+        bind_rows(
+            matches %>%
+                select(Player.2.Ringname, Player.2.Character) %>%
+                rename(ringname = Player.2.Ringname, character = Player.2.Character)
+        )
+
+    # Group by character and count unique players
+    unique_per_character <- combined %>%
+        group_by(character) %>%
+        summarise(total_unique_players = n_distinct(ringname), .groups = "drop")
+
+    # Print the result
+    unique_per_character
 }
 
 matches_won_per_stage_per_character <- function(data, character_name) {
@@ -62,55 +71,6 @@ matches_won_per_stage_per_character <- function(data, character_name) {
         select(Match.ID, Winner_Character, Stage.Type)
 
     return(compare_stage_types_winning_character(match_winners))
-}
-
-rounds_won_per_stage_per_character <- function(data, character_name, stage_name) {
-    stage_type_lookup <- data.frame(
-        Stage = c(
-            "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
-            "Broken House", "Grassland", "Aurora", "Island", "Statues",
-            "Terrace", "Snow Mountain", "Training Room", "Shrine", "Temple",
-            "River", "Sumo Ring", "Genesis", "Great Wall"
-        ),
-        Stage.Type = c(
-            "Rectangle", "Rectangle", "Full Fence", "Full Fence", "Octagon", "Octagon",
-            "Breakable Full Fence", "Breakable Full Fence", "Breakable Half Fence",
-            "Breakable Half Fence", "Half Fence", "Half Fence", "Full Fence and Open",
-            "Full Fence and Open", "Low Fence", "Low Fence", "Open", "Open",
-            "Single Wall", "Single Wall"
-        )
-    )
-
-    # Add Stage Type to data based on the lookup
-    stage_data <- data %>%
-        left_join(stage_type_lookup, by = "Stage") %>%
-        filter(Stage.Type == get_stage_type(stage_name, stage_type_lookup))
-
-    # Filter for matches where Blaze is one of the players, but not both
-    character_wins <- stage_data %>%
-        filter((Player.1.Character == character_name & Player.2.Character != character_name) |
-            (Player.2.Character == character_name & Player.1.Character != character_name))
-    # filter((Player.1.Character == character_name & Winning.Player.Number == 1) |
-    # (Player.2.Character == character_name & Winning.Player.Number == 2))
-
-    round_winners <- character_wins %>%
-        mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
-        mutate(Loser_Character = ifelse(Winning.Player.Number == 2, Player.1.Character, Player.2.Character))
-
-    round_winners <- round_winners %>%
-        mutate(Main_Character_Won = ifelse(Winner_Character == character_name, 1, 0))
-
-    rounds_won_summary <- round_winners %>%
-        pull(Main_Character_Won)
-
-
-    # rounds_won_summary <- character_wins %>%
-    # group_by(Match.ID, Stage) %>%
-    # summarise(Rounds.Won = n(), .groups = "drop") %>%
-    # arrange(desc(Rounds.Won)) %>%
-    # pull(Rounds.Won)
-
-    return(rounds_won_summary)
 }
 
 compare_stage_types <- function(data) {
@@ -209,46 +169,6 @@ compare_stage_match_types <- function(data) {
     return(p_value_table)
 }
 
-rounds_won_per_other_stages_per_character <- function(data, character_name, stage_name) {
-    stage_type_lookup <- data.frame(
-        Stage = c(
-            "Deep Mountain", "Palace", "City", "Ruins", "Arena", "Waterfalls",
-            "Broken House", "Grassland", "Aurora", "Island", "Statues",
-            "Terrace", "Snow Mountain", "Training Room", "Shrine", "Temple",
-            "River", "Sumo Ring", "Genesis", "Great Wall"
-        ),
-        Stage.Type = c(
-            "Rectangle", "Rectangle", "Full Fence", "Full Fence", "Octagon", "Octagon",
-            "Breakable Full Fence", "Breakable Full Fence", "Breakable Half Fence",
-            "Breakable Half Fence", "Half Fence", "Half Fence", "Full Fence and Open",
-            "Full Fence and Open", "Low Fence", "Low Fence", "Open", "Open",
-            "Single Wall", "Single Wall"
-        )
-    )
-
-    # Add Stage Type to data based on the lookup
-    stage_data <- data %>%
-        left_join(stage_type_lookup, by = "Stage") %>%
-        filter(Stage.Type != get_stage_type(stage_name, stage_type_lookup))
-
-    # Filter for matches where Blaze is one of the players, but not both
-    character_wins <- stage_data %>%
-        filter((Player.1.Character == character_name & Player.2.Character != character_name) |
-            (Player.2.Character == character_name & Player.1.Character != character_name))
-
-    round_winners <- character_wins %>%
-        mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
-        mutate(Loser_Character = ifelse(Winning.Player.Number == 2, Player.1.Character, Player.2.Character))
-
-    round_winners <- round_winners %>%
-        mutate(Main_Character_Won = ifelse(Winner_Character == character_name, 1, 0))
-
-    rounds_won_summary <- round_winners %>%
-        pull(Main_Character_Won)
-
-    return(rounds_won_summary)
-}
-
 rounds_won_per_stage_per_character_lookup <- function(data, character_name) {
     stage_type_lookup <- data.frame(
         Stage = c(
@@ -307,97 +227,30 @@ if (!file.exists(csv_filename)) {
 
 # Read the CSV file
 data <- read.csv(csv_filename)
-
 match_data <- data %>%
-    filter(as.numeric(Player.1.Rank) >= 40 & as.numeric(Player.2.Rank) >= 40 & round_number == 0)
+    filter(round_number == 0)
+print("Num matches: ")
+print(nrow(match_data))
+
+matches <- read.csv("matches_sorted.csv")
+print(paste(number_unique_players(matches), " unique players"))
+print(paste(number_unique_players_per_character(matches), " unique players per character"))
+
+
+matches$Video.URL <- paste0("<a href='", matches$Video.URL, "' target='_blank'>Open</a>")
+
+# match_data <- data %>%
+# filter(as.numeric(Player.1.Rank) >= 40 & as.numeric(Player.2.Rank) >= 40 & round_number == 0)
+
 
 ranks <- sort(unique(as.numeric(c(match_data$Player.1.Rank, match_data$Player.2.Rank))))
 characters <- sort(unique(c(match_data$Player.1.Character, match_data$Player.2.Character)))
 stages <- sort(unique(c(match_data$Stage)))
 
 # Combine Player 1 and Player 2 ranks and characters into one column each
-data_combined <- match_data %>%
-    pivot_longer(cols = c(Player.1.Rank, Player.2.Rank), names_to = "Player", values_to = "player_rank") %>%
-    pivot_longer(cols = c(Player.1.Character, Player.2.Character), names_to = "PlayerCharacter", values_to = "character") %>%
-    pivot_longer(cols = c(Stage), names_to = "Stage", values_to = "stage") %>%
-    select(-Player, -PlayerCharacter, -Stage)
 
 match_data$Youtube.Link <- paste0("<a href='", match_data$Youtube.Link, "' target='_blank'>Open</a>")
 
-
-############################ 3
-# Identify the winner for each match by the last round played in that match
-match_winners <- data %>%
-    group_by(Match.ID) %>%
-    filter(round_number == max(round_number)) %>% # Get the last round of each match
-    mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
-    select(Match.ID, Player.1.Character, Player.2.Character, Winner_Character)
-
-# Calculate total number of matches each character participated in
-total_matches <- match_winners %>%
-    select(Match.ID, Player.1.Character, Player.2.Character) %>%
-    pivot_longer(cols = c(Player.1.Character, Player.2.Character), names_to = "Player", values_to = "Character") %>%
-    group_by(Character) %>%
-    summarise(Total_Matches = n(), .groups = "drop")
-
-# Calculate total number of wins for each character
-win_counts <- match_winners %>%
-    group_by(Winner_Character) %>%
-    summarise(Total_Wins = n(), .groups = "drop")
-
-# Merge total matches and win counts to calculate win percentage
-win_percentage_table <- total_matches %>%
-    left_join(win_counts, by = c("Character" = "Winner_Character")) %>%
-    mutate(
-        Total_Wins = ifelse(is.na(Total_Wins), 0, Total_Wins), # Handle characters with zero wins
-        Win_Percentage = (Total_Wins / Total_Matches)
-    ) %>%
-    arrange(desc(Win_Percentage)) # Sort by win percentage in descending order
-
-#################################
-# Filter out matches where both players are the same character
-matchup_data <- data %>%
-    filter(Player.1.Character != Player.2.Character)
-
-# Identify the winner of the match by the last round
-match_winners <- matchup_data %>%
-    group_by(Match.ID) %>%
-    filter(round_number == max(round_number)) %>%
-    mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
-    select(Match.ID, Player.1.Character, Player.2.Character, Winner_Character)
-
-# Create two perspectives for every matchup: one with Player 1 as main character, and one with Player 2 as main character
-matchups_player1 <- match_winners %>%
-    mutate(
-        Main_Character = Player.1.Character,
-        Opponent_Character = Player.2.Character,
-        Main_Winner = (Winner_Character == Player.1.Character)
-    )
-
-matchups_player2 <- match_winners %>%
-    mutate(
-        Main_Character = Player.2.Character,
-        Opponent_Character = Player.1.Character,
-        Main_Winner = (Winner_Character == Player.2.Character)
-    )
-
-# Combine both perspectives into a single dataset
-full_matchup_data <- bind_rows(matchups_player1, matchups_player2)
-
-# Summarize the results: count total matches and wins for each character-opponent pairing
-character_matchup <- full_matchup_data %>%
-    group_by(Main_Character, Opponent_Character) %>%
-    summarise(
-        Total_Matches = n(),
-        Wins_By_Main_Character = sum(Main_Winner),
-        Win_Percentage = (Wins_By_Main_Character / Total_Matches),
-        .groups = "drop"
-    ) %>%
-    arrange(desc(Total_Matches)) %>%
-    rename(`Main\nCharacter` = `Main_Character`) %>%
-    rename(`vs\nCharacter` = `Opponent_Character`) %>%
-    rename(`Total\nMatches` = `Total_Matches`) %>%
-    rename(`Wins By\nMain Character` = `Wins_By_Main_Character`)
 
 count_character_matches <- function(data, character_name) {
     return(nrow(data %>% filter(round_number == 0) %>% filter((Player.1.Character == character_name & Player.2.Character != character_name) |
@@ -491,7 +344,7 @@ win_rate_per_rank <- function() {
     match_winners <- data %>%
         group_by(Match.ID) %>%
         filter(round_number == max(round_number)) %>% # Get the last round of each match
-        filter(Player.1.Rank != Player.2.Rank) %>%
+        filter(Player.1.Rank <= 46 & Player.2.Rank <= 46) %>%
         mutate(
             Winner_Rank = ifelse(Winning.Player.Number == 1, Player.1.Rank, Player.2.Rank),
             Loser_Rank = ifelse(Winning.Player.Number == 1, Player.2.Rank, Player.1.Rank)
@@ -499,7 +352,7 @@ win_rate_per_rank <- function() {
         select(Match.ID, Winner_Rank, Loser_Rank)
 
     win_percentage_lookup <- match_winners %>%
-        filter(Winner_Rank > 39) %>%
+        filter(Winner_Rank <= 46) %>%
         group_by(Winner_Rank, Loser_Rank) %>%
         summarise(
             wins = n(), # Count the number of wins
@@ -509,21 +362,294 @@ win_rate_per_rank <- function() {
         ) %>%
         select(Target_Rank = Winner_Rank, Other_Rank = Loser_Rank, win_percentage) %>%
         ungroup()
+
     return(win_percentage_lookup)
 }
 
-win_rate_per_rank_data <- win_rate_per_rank()
-time_remaining_per_stage_data <- time_remaining_per_stage()
+win_rate_per_rank_data <- NA
 
-youtube_video_data_all <- match_data %>%
-    mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
-    select(Stage, Desc, Link)
+if (file.exists("data/win_rate_per_rank_data.Rda")) {
+    win_rate_per_rank_data <- readRDS("data/win_rate_per_rank_data.Rda")
+    win_rate_plot_data <- readRDS("data/win_rate_plot_data.Rda")
+    time_remaining_per_stage_data <- readRDS("data/time_remaining_per_stage_data.Rda")
+    youtube_video_data_all <- readRDS("data/youtube_video_data_all.Rda")
+    rank_counts_static <- readRDS("data/rank_counts_static.Rda")
+    time_counts <- readRDS("data/time_counts.Rda")
+    data_combined <- readRDS("data/data_combined.Rda")
+    match_winners <- readRDS("data/match_winners.Rda")
+    total_matches <- readRDS("data/total_matches.Rda")
+    total_matches_same_rank <- readRDS("data/total_matches_same_rank.Rda")
+    character_matchup <- readRDS("data/character_matchup.Rda")
+    win_counts <- readRDS("data/win_counts.Rda")
+    win_percentage_table <- readRDS("data/win_percentage_table.Rda")
+    win_percentage_same_rank_table <- readRDS("data/win_percentage_same_rank_table.Rda")
 
-time_counts <- time_remaining_per_stage_dist() %>%
-    select(Time.Seconds)
+    rounds_won_per_character_any_rank <- readRDS("data/rounds_won_per_character_any_rank.Rda")
+
+    rounds_won_per_character_same_rank <- readRDS("data/rounds_won_per_character_same_rank")
+
+
+    print("analytics.R - loaded RDAs")
+} else {
+    data_combined <- match_data %>%
+        pivot_longer(cols = c(Player.1.Rank, Player.2.Rank), names_to = "Player", values_to = "player_rank") %>%
+        pivot_longer(cols = c(Player.1.Character, Player.2.Character), names_to = "PlayerCharacter", values_to = "character") %>%
+        pivot_longer(cols = c(Stage), names_to = "Stage", values_to = "stage") %>%
+        select(-Player, -PlayerCharacter, -Stage)
+
+    # cat(names(data_combined),sep="\n")
+    saveRDS(data_combined, "data/data_combined.Rda")
+
+    ############################ 3
+    # Identify the winner for each match by the last round played in that match
+    match_winners <- data %>%
+        group_by(Match.ID) %>%
+        filter(round_number == max(round_number)) %>% # Get the last round of each match
+        mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
+        select(Match.ID, Player.1.Character, Player.2.Character, Winner_Character)
+
+
+    saveRDS(match_winners, "data/match_winners.Rda")
+
+    match_winners_same_rank <- data %>%
+        filter(Player.1.Rank == Player.2.Rank) %>%
+        group_by(Match.ID) %>%
+        filter(round_number == max(round_number)) %>% # Get the last round of each match
+        mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
+        select(Match.ID, Player.1.Character, Player.2.Character, Winner_Character)
+
+    saveRDS(match_winners_same_rank, "data/match_winners_same_rank.Rda")
+
+    # Calculate total number of wins for each character
+    win_counts <- match_winners %>%
+        group_by(Winner_Character) %>%
+        summarise(Total_Wins = n(), .groups = "drop")
+    saveRDS(win_counts, "data/win_counts.Rda")
+
+    win_counts_same_rank <- match_winners_same_rank %>%
+        group_by(Winner_Character) %>%
+        summarise(Total_Wins = n(), .groups = "drop")
+
+    win_rate_per_rank_data <- win_rate_per_rank()
+    saveRDS(win_rate_per_rank_data, "data/win_rate_per_rank_data.Rda")
+
+    win_rate_plot_data <- win_rate_per_rank_data %>%
+        mutate(`Win %` = win_percentage * 100) %>%
+        mutate(`vs Rank` = Other_Rank)
+    saveRDS(win_rate_plot_data, "data/win_rate_plot_data.Rda")
+
+    time_remaining_per_stage_data <- time_remaining_per_stage()
+    saveRDS(time_remaining_per_stage_data, "data/time_remaining_per_stage_data.Rda")
+
+    youtube_video_data_all <- match_data %>%
+        mutate(Stage = Stage, Desc = paste("Lv", Player.1.Rank, " ", Player.1.Character, " vs Lv", Player.2.Rank, " ", Player.2.Character), Link = Youtube.Link) %>%
+        select(Stage, Desc, Link)
+    saveRDS(youtube_video_data_all, "data/youtube_video_data_all.Rda")
+
+    rank_counts_static <- data_combined %>%
+        filter(player_rank <= 46) %>%
+        select(player_rank) %>%
+        pivot_longer(cols = everything(), names_to = "Player", values_to = "Rank") %>%
+        count(Rank)
+
+    rank_counts_static$Rank <- factor(rank_counts_static$Rank)
+    saveRDS(rank_counts_static, "data/rank_counts_static.Rda")
+
+    time_counts <- time_remaining_per_stage_dist() %>%
+        select(Time.Seconds)
+
+    saveRDS(time_counts, "data/time_counts.Rda")
+
+    # Calculate total number of matches each character participated in
+    total_matches <- match_winners %>%
+        select(Match.ID, Player.1.Character, Player.2.Character) %>%
+        pivot_longer(cols = c(Player.1.Character, Player.2.Character), names_to = "Player", values_to = "Character") %>%
+        group_by(Character) %>%
+        summarise(Total_Matches = n(), .groups = "drop")
+
+    saveRDS(total_matches, "data/total_matches.Rda")
+
+    total_matches_same_rank <- match_winners_same_rank %>%
+        select(Match.ID, Player.1.Character, Player.2.Character) %>%
+        pivot_longer(cols = c(Player.1.Character, Player.2.Character), names_to = "Player", values_to = "Character") %>%
+        group_by(Character) %>%
+        summarise(Total_Matches = n(), .groups = "drop")
+
+    saveRDS(total_matches, "data/total_matches_same_rank.Rda")
+
+    #################################
+    # Filter out matches where both players are the same character
+    matchup_data <- data %>%
+        filter(Player.1.Character != Player.2.Character)
+
+    # Identify the winner of the match by the last round
+    match_winners <- matchup_data %>%
+        group_by(Match.ID) %>%
+        filter(round_number == max(round_number)) %>%
+        mutate(Winner_Character = ifelse(Winning.Player.Number == 1, Player.1.Character, Player.2.Character)) %>%
+        select(Match.ID, Player.1.Character, Player.2.Character, Winner_Character)
+
+    # Create two perspectives for every matchup: one with Player 1 as main character, and one with Player 2 as main character
+    matchups_player1 <- match_winners %>%
+        mutate(
+            Main_Character = Player.1.Character,
+            Opponent_Character = Player.2.Character,
+            Main_Winner = (Winner_Character == Player.1.Character)
+        )
+
+    matchups_player2 <- match_winners %>%
+        mutate(
+            Main_Character = Player.2.Character,
+            Opponent_Character = Player.1.Character,
+            Main_Winner = (Winner_Character == Player.2.Character)
+        )
+
+    # Combine both perspectives into a single dataset
+    full_matchup_data <- bind_rows(matchups_player1, matchups_player2)
+
+    # Summarize the results: count total matches and wins for each character-opponent pairing
+    character_matchup <- full_matchup_data %>%
+        group_by(Main_Character, Opponent_Character) %>%
+        summarise(
+            Total_Matches = n(),
+            Wins_By_Main_Character = sum(Main_Winner),
+            Win_Percentage = (Wins_By_Main_Character / Total_Matches),
+            .groups = "drop"
+        ) %>%
+        arrange(desc(Total_Matches)) %>%
+        rename(`Main\nCharacter` = `Main_Character`) %>%
+        rename(`vs\nCharacter` = `Opponent_Character`) %>%
+        rename(`Total\nMatches` = `Total_Matches`) %>%
+        rename(`Wins By\nMain Character` = `Wins_By_Main_Character`)
+
+    saveRDS(character_matchup, "data/character_matchup.Rda")
+
+    # Merge total matches and win counts to calculate win percentage
+    win_percentage_table <- total_matches %>%
+        left_join(win_counts, by = c("Character" = "Winner_Character")) %>%
+        mutate(
+            Total_Wins = ifelse(is.na(Total_Wins), 0, Total_Wins), # Handle characters with zero wins
+            Win_Percentage = (Total_Wins / Total_Matches)
+        ) %>%
+        arrange(desc(Win_Percentage)) # Sort by win percentage in descending order
+
+    win_percentage_same_rank_table <- total_matches_same_rank %>%
+        left_join(win_counts_same_rank, by = c("Character" = "Winner_Character")) %>%
+        mutate(
+            Total_Wins = ifelse(is.na(Total_Wins), 0, Total_Wins), # Handle characters with zero wins
+            Win_Percentage = (Total_Wins / Total_Matches)
+        ) %>%
+        arrange(desc(Win_Percentage)) # Sort by win percentage in descending order
+
+    win_percentage_same_rank_table <- add_p_value_matches_won(win_percentage_same_rank_table, data, FALSE)
+
+    saveRDS(win_percentage_same_rank_table, "data/win_percentage_same_rank_table.Rda")
+
+    win_percentage_table <- add_p_value_matches_won(win_percentage_table, data, TRUE)
+
+    saveRDS(win_percentage_table, "data/win_percentage_table.Rda")
+
+    rounds_won_per_character_any_rank <- rounds_won_per_character(data, TRUE)
+    rounds_won_per_character_any_rank <- add_p_value_rounds_won(rounds_won_per_character_any_rank, data, TRUE)
+    saveRDS(rounds_won_per_character_any_rank, "data/rounds_won_per_character_any_rank.Rda")
+
+    rounds_won_per_character_same_rank <- rounds_won_per_character(data, FALSE)
+    rounds_won_per_character_same_rank <- add_p_value_rounds_won(rounds_won_per_character_same_rank, data, FALSE)
+    saveRDS(rounds_won_per_character_same_rank, "data/rounds_won_per_character_same_rank")
+}
+
 
 min_point <- min(time_counts$Time.Seconds)
 max_point <- max(time_counts$Time.Seconds)
 
 time_counts <- time_counts %>%
     count(Time.Seconds)
+
+
+# shun_matches <- read.csv("shun_matches.csv")
+shun_matches <- read.csv("beta_match_data_20241228.csv")
+
+shun_table_data <- shun_matches %>%
+    filter(`Player.1.Character` == "Shun" | `Player.2.Character` == "Shun") %>%
+    mutate(
+        `Shun.Drinks.1P` = ifelse(`Player.1.Character` == "Shun", as.numeric(`Shun.Drinks.1P`), NA),
+        `Shun.Drinks.2P` = ifelse(`Player.2.Character` == "Shun", as.numeric(`Shun.Drinks.2P`), NA),
+        Winning_Player_Is_Shun = case_when(
+            `Winning.Player.Number` == 1 & `Player.1.Character` == "Shun" ~ TRUE,
+            `Winning.Player.Number` == 2 & `Player.2.Character` == "Shun" ~ TRUE,
+            TRUE ~ FALSE
+        )
+    ) %>%
+    pivot_longer(
+        cols = c(`Shun.Drinks.1P`, `Shun.Drinks.2P`),
+        names_to = "Player",
+        values_to = "Drinks"
+    ) %>%
+    filter(!is.na(Drinks)) %>%
+    group_by(Drinks) %>%
+    summarize(
+        Total_Rounds = n(),
+        Rounds_Won = sum(Winning_Player_Is_Shun, na.rm = TRUE),
+        Win_Percentage = round((Rounds_Won / Total_Rounds) * 100, 2),
+        .groups = "drop"
+    )
+
+shun_line_data <- shun_matches %>%
+    filter(`Player.1.Character` == "Shun" | `Player.2.Character` == "Shun") %>%
+    # filter(Player.1.Rank == Player.2.Rank) %>%
+    mutate(
+        `Shun.Drinks.1P` = ifelse(`Player.1.Character` == "Shun", as.numeric(`Shun.Drinks.1P`), NA),
+        `Shun.Drinks.2P` = ifelse(`Player.2.Character` == "Shun", as.numeric(`Shun.Drinks.2P`), NA),
+        Winning_Player_Is_Shun = case_when(
+            `Winning.Player.Number` == 1 & `Player.1.Character` == "Shun" ~ TRUE,
+            `Winning.Player.Number` == 2 & `Player.2.Character` == "Shun" ~ TRUE,
+            TRUE ~ FALSE
+        )
+    ) %>%
+    pivot_longer(
+        cols = c(`Shun.Drinks.1P`, `Shun.Drinks.2P`),
+        names_to = "Player",
+        values_to = "Drinks"
+    ) %>%
+    filter(!is.na(Drinks)) %>%
+    group_by(Drinks) %>%
+    summarize(
+        Total_Rounds = n(),
+        Rounds_Won = sum(Winning_Player_Is_Shun, na.rm = TRUE),
+        Win_Percentage = round((Rounds_Won / Total_Rounds) * 100, 2),
+        .groups = "drop"
+    ) %>%
+    filter(Total_Rounds >= 10)
+
+
+unique_players_count <- function(df) {
+    all_ringnames <- c(df$Player.1.Ringname, df$Player.2.Ringname)
+
+    # Get the unique values
+    unique_ringnames <- unique(all_ringnames)
+
+    # Count the number of unique ringnames
+    length(unique_ringnames)
+}
+
+matches_per_player <- function(df) {
+    print(colnames(df))
+    # Filter rows where Round.Number = 0
+    matches_df <- df %>% filter(round_number == 0)
+
+    # Combine both Player.1.Ringname and Player.2.Ringname into one column
+    all_players <- c(matches_df$Player.1.Ringname, matches_df$Player.2.Ringname)
+
+    # Create a data table with counts of matches for each player
+    player_match_count <- data.frame(
+        Player_Ringname = all_players
+    ) %>%
+        group_by(Player_Ringname) %>%
+        summarise(Total_Matches = n(), .groups = "drop") %>%
+        arrange(desc(Total_Matches))
+}
+
+print(shun_table_data, n = Inf)
+
+# print("Unique players:")
+# print(unique_players(data))
